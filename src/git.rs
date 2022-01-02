@@ -1,11 +1,17 @@
-use git2::Repository;
+use git2::{Repository, Status};
 
 pub fn is_repo_dirty(repo: &Repository) -> bool {
 	let mut dirty = false;
 
 	if let Ok(statuses) = repo.statuses(None) {
-		if statuses.iter().len() > 0 {
-			dirty = true;
+		for status in statuses.iter() {
+			match status.status() {
+				Status::IGNORED => continue,
+				_ => {
+					dirty = true;
+					break;
+				}
+			}
 		}
 	}
 
