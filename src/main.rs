@@ -1,11 +1,17 @@
-use clap::Parser;
-
 mod git;
-mod lib;
 mod log;
+mod utils;
 
+use crate::{
+	git::{has_repo_not_pushed_commits, is_repo_dirty},
+	log::{println, println_label},
+	utils::{ask, find_repos_in_dir, AskDefault},
+};
+use clap::Parser;
+use git2::Repository;
+use log::OutputLabel;
 use std::path::Path;
-use yansi::{Color, Paint};
+use yansi::Paint;
 
 // TODO: handle unwrap properly
 
@@ -32,46 +38,52 @@ fn main() {
 	let args = Arguments::parse();
 
 	// Get absolute path
-	let directory = Path::new(&args.directory).canonicalize().unwrap();
+	let directory = Path::new(&args.directory)
+		.canonicalize()
+		.expect("Could not get absolute path");
 
 	// Find git repositories in the specified directory
-	let repos = lib::find_repos_in_dir(&directory).unwrap();
+	let repos = find_repos_in_dir(&directory).expect("Could not read folder content");
 
-	log::println_label(
-		"Found",
-		Color::Blue,
+	// Exit if no git repositories were found
+	if repos.is_empty() {
+		println_label(OutputLabel::Error, "No git repositories found");
+
+		return;
+	}
+
+	println_label(
+		OutputLabel::Info("Found"),
 		format!("{} repositories", &repos.len()).as_str(),
 	);
 
 	// Check if there are dirty repositories
-	let mut dirty_repos: Vec<String> = Vec::new();
-	let mut not_pushed_commits_repos: Vec<String> = Vec::new();
+	let mut dirty_repos: Vec<&Repository> = Vec::new();
+	let mut not_pushed_commits_repos: Vec<&Repository> = Vec::new();
 
-	for repo in repos {
-		if git::is_repo_dirty(&repo) {
-			dirty_repos.push(git::repo_folder_name(&repo))
+	for repo in &repos {
+		if is_repo_dirty(repo) {
+			dirty_repos.push(repo)
 		}
 
-		if git::has_repo_not_pushed_commits(&repo) {
-			not_pushed_commits_repos.push(git::repo_folder_name(&repo))
+		if has_repo_not_pushed_commits(repo) {
+			not_pushed_commits_repos.push(repo)
 		}
 	}
 
 	if !dirty_repos.is_empty() {
-		log::println_label(
-			"Found",
-			Color::Blue,
+		println_label(
+			OutputLabel::Info("Found"),
 			format!("{} dirty repositories", &dirty_repos.len()).as_str(),
 		);
 		for repo in dirty_repos {
-			log::println(&repo.as_str());
+			println(repo.path().parent().unwrap().to_str().unwrap());
 		}
 	}
 
 	if !not_pushed_commits_repos.is_empty() {
-		log::println_label(
-			"Found",
-			Color::Blue,
+		println_label(
+			OutputLabel::Info("Found"),
 			format!(
 				"{} repositories that have not pushed commits to remote",
 				&not_pushed_commits_repos.len()
@@ -79,13 +91,12 @@ fn main() {
 			.as_str(),
 		);
 		for repo in not_pushed_commits_repos {
-			log::println(&repo.as_str());
+			println(repo.path().parent().unwrap().to_str().unwrap());
 		}
 	}
 
 	// If user decided to push commits, then push them
-	if args.push && lib::ask("Push commits to remote?") {
-		log::println_label("Pushing", Color::Green, "commits to remote");
-		// TODO: Prompt user to push commits
+	if args.push || ask("Push commits to remote?", AskDefault::Yes) {
+		println_label(OutputLabel::Success("Pushing"), "commits to remote");
 	}
 }

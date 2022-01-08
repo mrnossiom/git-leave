@@ -26,14 +26,3 @@ pub fn has_repo_not_pushed_commits(_repo: &Repository) -> bool {
 
 	false
 }
-
-pub fn repo_folder_name(repo: &Repository) -> String {
-	repo.path()
-		.parent()
-		.unwrap()
-		.file_name()
-		.unwrap()
-		.to_str()
-		.unwrap()
-		.to_string()
-}

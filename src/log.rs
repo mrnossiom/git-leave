@@ -1,30 +1,45 @@
-use term_size;
 use yansi::{Color, Style};
 
 pub const LABEL_WIDTH: usize = 12;
 
-pub fn println(message: &str) {
-	println!("{}", pretty_output("", Color::White, message));
+pub fn println<S: Into<String>>(message: S) {
+	println!("{}", pretty_output(OutputLabel::None, message));
 }
 
-pub fn println_label<S: Into<String>>(label: S, label_colour: Color, message: S) {
-	println!("{}", pretty_output(label, label_colour, message));
+pub fn println_label<S: Into<String>>(label: OutputLabel, message: S) {
+	println!("{}", pretty_output(label, message));
+}
+
+#[allow(dead_code)]
+pub enum OutputLabel<'a> {
+	Error,
+	Warning,
+	Info(&'a str),
+	Success(&'a str),
+	Custom(&'a str, Color),
+	Prompt(&'a str),
+	None,
 }
 
 /// Pretty a message with a given label and a given message colour
-pub fn pretty_output<S: Into<String>>(label: S, label_colour: Color, message: S) -> String {
+pub fn pretty_output<S: Into<String>>(label: OutputLabel, message: S) -> String {
 	let term_width = get_term_width();
 	let message = shorten(message.into(), term_width - LABEL_WIDTH - 1);
-	let label = label.into();
 
-	if label.len() > LABEL_WIDTH {
-		panic!("Label {} too long", label);
-	}
+	let (label, label_color) = match label {
+		OutputLabel::Error => (String::from("Error"), Color::Red),
+		OutputLabel::Warning => (String::from("Warn"), Color::Yellow),
+		OutputLabel::Info(info) => (String::from(info), Color::Blue),
+		OutputLabel::Success(success) => (String::from(success), Color::Green),
+		OutputLabel::Custom(custom, custom_colour) => (String::from(custom), custom_colour),
+		OutputLabel::Prompt(prompt) => (String::from(prompt), Color::Yellow),
+		OutputLabel::None => (String::from(""), Color::White),
+	};
 
 	return format!(
 		"{}{} {}{}",
 		" ".repeat(LABEL_WIDTH - label.len()),
-		Style::new(label_colour).bold().paint(label),
+		Style::new(label_color).bold().paint(label),
 		message,
 		" ".repeat(term_width - LABEL_WIDTH - message.len() - 1),
 	);
