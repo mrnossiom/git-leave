@@ -10,6 +10,7 @@ pub fn find_repos_in_dir(dir: &Path) -> io::Result<Vec<Repository>> {
 	let mut repos: Vec<Repository> = Vec::new();
 
 	// TODO: make this function more efficient (using threads)
+	// TODO: add timer to flex
 
 	if dir.is_dir() {
 		let dir_content = read_dir(dir)
@@ -27,7 +28,7 @@ pub fn find_repos_in_dir(dir: &Path) -> io::Result<Vec<Repository>> {
 
 					repos.push(repo);
 				} else {
-					find_repos_in_dir(&path)?;
+					repos.extend(find_repos_in_dir(&path)?);
 				}
 			}
 		}

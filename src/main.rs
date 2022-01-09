@@ -3,17 +3,15 @@ mod log;
 mod utils;
 
 use crate::{
-	git::{has_repo_not_pushed_commits, is_repo_dirty},
+	git::{find_ahead_branches_in_repo, is_repo_dirty},
 	log::{println, println_label},
 	utils::{ask, find_repos_in_dir, AskDefault},
 };
 use clap::Parser;
-use git2::Repository;
+use git2::{Branch, Repository};
 use log::OutputLabel;
 use std::path::Path;
 use yansi::Paint;
-
-// TODO: handle unwrap properly
 
 /// Push all commits in git repositories
 #[derive(Parser, Debug)]
@@ -58,45 +56,64 @@ fn main() {
 	);
 
 	// Check if there are dirty repositories
-	let mut dirty_repos: Vec<&Repository> = Vec::new();
-	let mut not_pushed_commits_repos: Vec<&Repository> = Vec::new();
-
-	for repo in &repos {
-		if is_repo_dirty(repo) {
-			dirty_repos.push(repo)
-		}
-
-		if has_repo_not_pushed_commits(repo) {
-			not_pushed_commits_repos.push(repo)
-		}
-	}
+	let dirty_repos: Vec<&Repository> = repos.iter().filter(|repo| is_repo_dirty(repo)).collect();
 
 	if !dirty_repos.is_empty() {
 		println_label(
 			OutputLabel::Info("Found"),
-			format!("{} dirty repositories", &dirty_repos.len()).as_str(),
+			format!("{} dirty repositories", &dirty_repos.len()),
 		);
-		for repo in dirty_repos {
+
+		dirty_repos.iter().for_each(|repo| {
 			println(repo.path().parent().unwrap().to_str().unwrap());
-		}
+		});
 	}
 
-	if !not_pushed_commits_repos.is_empty() {
+	// Check if a repo has any local ahead branch
+	let repos_with_ahead_branches: Vec<(&Repository, Vec<Branch>)> = repos
+		.iter()
+		.map(|repo| (repo, find_ahead_branches_in_repo(repo)))
+		.filter(|vec| !vec.1.is_empty())
+		.collect();
+
+	if !repos_with_ahead_branches.is_empty() {
 		println_label(
 			OutputLabel::Info("Found"),
 			format!(
 				"{} repositories that have not pushed commits to remote",
-				&not_pushed_commits_repos.len()
-			)
-			.as_str(),
+				&repos_with_ahead_branches.len()
+			),
 		);
-		for repo in not_pushed_commits_repos {
-			println(repo.path().parent().unwrap().to_str().unwrap());
-		}
+
+		repos_with_ahead_branches
+			.iter()
+			.for_each(|(repo, ahead_branches)| {
+				println(format!(
+					"Repository {} have these branches ahead: {}",
+					Paint::yellow(
+						repo.path()
+							.parent()
+							.unwrap()
+							.file_name()
+							.unwrap()
+							.to_string_lossy()
+					),
+					Paint::yellow(
+						ahead_branches
+							.iter()
+							.map(|branch| branch.name().unwrap().unwrap())
+							.collect::<Vec<&str>>()
+							.join("/")
+					)
+				));
+			});
 	}
 
-	// If user decided to push commits, then push them
-	if args.push || ask("Push commits to remote?", AskDefault::Yes) {
+	// If there is ahead branches and that user decided to push commits, then push to remote.
+	if !repos_with_ahead_branches.is_empty()
+		&& (args.push || ask("Push commits to remote?", AskDefault::Yes))
+	{
 		println_label(OutputLabel::Success("Pushing"), "commits to remote");
+		// TODO: implement
 	}
 }
