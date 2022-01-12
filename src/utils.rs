@@ -1,18 +1,19 @@
-use crate::log::{pretty_output, println_label, OutputLabel};
+use crate::log::{print_label, println_label, OutputLabel};
 use git2::Repository;
 use std::{
 	fs::read_dir,
-	io::{self, stdin, stdout, Write},
+	io::{stdin, stdout, Result as IoResult, Write},
 	path::Path,
 };
 
-pub fn find_repos_in_dir(dir: &Path) -> io::Result<Vec<Repository>> {
+pub fn find_repos_in_dir(dir: &Path) -> IoResult<Vec<Repository>> {
 	let mut repos: Vec<Repository> = Vec::new();
 
 	// TODO: make this function more efficient (using threads)
-	// TODO: add timer to flex
 
 	if dir.is_dir() {
+		print_label(OutputLabel::Info("Directory"), dir.display().to_string());
+
 		let dir_content = read_dir(dir)
 			.expect("Couldn't read directory")
 			.collect::<Vec<_>>();
@@ -51,10 +52,7 @@ pub fn ask(question: &str, default: AskDefault) -> bool {
 		AskDefault::None => "[y/n]",
 	};
 
-	print!(
-		"{} ",
-		pretty_output(OutputLabel::Prompt(ask_case), question).trim_end()
-	);
+	print_label(OutputLabel::Prompt(ask_case), question);
 	stdout().flush().unwrap();
 
 	let mut input = String::new();

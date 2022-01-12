@@ -1,15 +1,26 @@
+use std::io::{stdout, Write};
 use yansi::{Color, Style};
 
 pub const LABEL_WIDTH: usize = 12;
 
+/// Print a message with a label, add a \r at the end and flush the stdout
+pub fn print_label<S: Into<String>>(label: OutputLabel, message: S) {
+	print!("{}\r", pretty_output(label, message));
+
+	stdout().flush().unwrap();
+}
+
+/// Print a message with no label
 pub fn println<S: Into<String>>(message: S) {
 	println!("{}", pretty_output(OutputLabel::None, message));
 }
 
+/// Print a message with the specified label
 pub fn println_label<S: Into<String>>(label: OutputLabel, message: S) {
 	println!("{}", pretty_output(label, message));
 }
 
+/// The enum of possible output labels
 #[allow(dead_code)]
 pub enum OutputLabel<'a> {
 	Error,

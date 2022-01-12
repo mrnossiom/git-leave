@@ -10,7 +10,7 @@ use crate::{
 use clap::Parser;
 use git2::{Branch, Repository};
 use log::OutputLabel;
-use std::path::Path;
+use std::{path::Path, time::Instant};
 use yansi::Paint;
 
 /// Push all commits in git repositories
@@ -35,10 +35,19 @@ fn main() {
 	// Parse command line arguments
 	let args = Arguments::parse();
 
+	// Display the name of the program
+	println_label(
+		OutputLabel::Success("Welcome"),
+		format!("to {}", Paint::yellow("git-leave")),
+	);
+
 	// Get absolute path
 	let directory = Path::new(&args.directory)
 		.canonicalize()
 		.expect("Could not get absolute path");
+
+	// Start the timer
+	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
 	let repos = find_repos_in_dir(&directory).expect("Could not read folder content");
@@ -52,7 +61,11 @@ fn main() {
 
 	println_label(
 		OutputLabel::Info("Found"),
-		format!("{} repositories", &repos.len()).as_str(),
+		format!(
+			"{} repositories in {}s",
+			&repos.len(),
+			begin_search_time.elapsed().subsec_millis() as f64 / 1000.0
+		),
 	);
 
 	// Check if there are dirty repositories
