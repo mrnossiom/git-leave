@@ -1,5 +1,19 @@
 # Git Leave
 
-> A cli tool to search for not pushed commits in every git repository in a directory and prompt the user to push them or not (he can select).
+> Check for unsaved or uncommitted changes on your machine.
 
 ---
+
+# Usage
+```
+USAGE:
+    git-leave [OPTIONS] [DIRECTORY]
+
+ARGS:
+    <DIRECTORY>    The directory to search in [default: .]
+
+OPTIONS:
+    -h, --help       Print help information
+    -p, --push       Push commits to remote
+    -V, --version    Print version information
+```
