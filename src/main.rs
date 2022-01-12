@@ -26,6 +26,8 @@ struct Arguments {
 	push: bool,
 }
 
+// TODO: default project directory in .gitconfig via gitleave.projects_dir or something like this
+
 fn main() {
 	// Enable coloring on Windows if possible
 	if cfg!(windows) && !Paint::enable_windows_ascii() {
@@ -42,7 +44,7 @@ fn main() {
 	);
 
 	// Get absolute path
-	let directory = Path::new(&args.directory)
+	let search_directory = Path::new(&args.directory)
 		.canonicalize()
 		.expect("Could not get absolute path");
 
@@ -50,7 +52,7 @@ fn main() {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = find_repos_in_dir(&directory).expect("Could not read folder content");
+	let repos = find_repos_in_dir(&search_directory).expect("Could not read folder content");
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
@@ -64,7 +66,7 @@ fn main() {
 		format!(
 			"{} repositories in {}s",
 			&repos.len(),
-			begin_search_time.elapsed().subsec_millis() as f64 / 1000.0
+			begin_search_time.elapsed().as_millis() as f64 / 1000.0
 		),
 	);
 
@@ -78,7 +80,14 @@ fn main() {
 		);
 
 		dirty_repos.iter().for_each(|repo| {
-			println(repo.path().parent().unwrap().to_str().unwrap());
+			println(
+				repo.path()
+					.parent()
+					.unwrap()
+					.to_str()
+					.unwrap()
+					.replace(env!("HOME"), "~"),
+			);
 		});
 	}
 
