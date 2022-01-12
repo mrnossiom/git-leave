@@ -109,6 +109,9 @@ fn main() {
 			});
 	}
 
+	return;
+
+	#[allow(unreachable_code)]
 	// If there is ahead branches and that user decided to push commits, then push to remote.
 	if !repos_with_ahead_branches.is_empty()
 		&& (args.push || ask("Push commits to remote?", AskDefault::Yes))
