@@ -28,7 +28,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	// Get all local branches
 	let local_branches = repo
 		.branches(Some(BranchType::Local))
-		.unwrap()
+		.expect("Could not get local branches")
 		.map(|b| b.unwrap().0)
 		.collect::<Vec<Branch>>();
 

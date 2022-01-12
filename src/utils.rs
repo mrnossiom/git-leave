@@ -56,7 +56,9 @@ pub fn ask(question: &str, default: AskDefault) -> bool {
 	stdout().flush().unwrap();
 
 	let mut input = String::new();
-	stdin().read_line(&mut input).unwrap();
+	stdin()
+		.read_line(&mut input)
+		.expect("Couldn't read user input");
 
 	match input.as_str() {
 		"Y\n" => true,
