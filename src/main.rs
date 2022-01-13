@@ -5,7 +5,7 @@ mod utils;
 use crate::{
 	git::{find_ahead_branches_in_repo, is_repo_dirty},
 	log::{println, println_label},
-	utils::{ask, find_repos_in_dir, AskDefault},
+	utils::find_repos_in_dir,
 };
 use clap::Parser;
 use git2::{Branch, Repository};
@@ -25,8 +25,6 @@ struct Arguments {
 	#[clap(short, long)]
 	push: bool,
 }
-
-// TODO: default project directory in .gitconfig via gitleave.projects_dir or something like this
 
 fn main() {
 	// Enable coloring on Windows if possible
@@ -129,16 +127,5 @@ fn main() {
 					)
 				));
 			});
-	}
-
-	return;
-
-	#[allow(unreachable_code)]
-	// If there is ahead branches and that user decided to push commits, then push to remote.
-	if !repos_with_ahead_branches.is_empty()
-		&& (args.push || ask("Push commits to remote?", AskDefault::Yes))
-	{
-		println_label(OutputLabel::Success("Pushing"), "commits to remote");
-		// TODO: implement
 	}
 }
