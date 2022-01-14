@@ -1,16 +1,14 @@
-mod git;
 mod log;
 mod utils;
 
-use crate::{
-	git::{find_ahead_branches_in_repo, is_repo_dirty},
-	log::{println, println_label},
-	utils::find_repos_in_dir,
-};
 use clap::Parser;
 use git2::{Branch, Repository};
-use log::OutputLabel;
+use log::{println, println_label, OutputLabel};
 use std::{path::Path, time::Instant};
+use utils::{
+	crawl::crawl_directory_for_repos,
+	git::{find_ahead_branches_in_repo, is_repo_dirty},
+};
 use yansi::Paint;
 
 /// Push all commits in git repositories
@@ -50,7 +48,7 @@ fn main() {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = find_repos_in_dir(&search_directory).expect("Could not read folder content");
+	let repos = crawl_directory_for_repos(&search_directory).expect("Could not read folder content");
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
