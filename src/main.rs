@@ -11,6 +11,8 @@ use utils::{
 };
 use yansi::Paint;
 
+// TODO: proper unwrap handling
+
 /// Push all commits in git repositories
 #[derive(Parser, Debug)]
 #[clap(name = "git-leave", about, version, author)]
@@ -26,7 +28,8 @@ struct Arguments {
 
 fn main() {
 	// Enable coloring on Windows if possible
-	if cfg!(windows) && !Paint::enable_windows_ascii() {
+	#[cfg(windows)]
+	if !Paint::enable_windows_ascii() {
 		Paint::disable();
 	}
 
@@ -48,11 +51,12 @@ fn main() {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = crawl_directory_for_repos(&search_directory).expect("Could not read folder content");
+	let repos =
+		crawl_directory_for_repos(&search_directory).expect("Could not read folder content");
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
-		println_label(OutputLabel::Error, "No git repositories found");
+		println_label(OutputLabel::Info("Empty"), "No git repositories found");
 
 		return;
 	}

@@ -67,8 +67,9 @@ fn shorten(message: String, max_width: usize) -> String {
 		return message;
 	}
 
-	// Break the message at 3/4 of the available width
-	let break_index = (max_width / 4) * 3;
+	// Break the message at half of the available width
+	// Better for readability than at the end
+	let break_index = max_width / 2;
 
 	return [
 		message.chars().take(break_index).collect(),
