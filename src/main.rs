@@ -11,11 +11,9 @@ use utils::{
 };
 use yansi::Paint;
 
-// TODO: proper unwrap handling
-
 /// Push all commits in git repositories
 #[derive(Parser, Debug)]
-#[clap(name = "git-leave", about, version, author)]
+#[clap(name = "git-leave", about, version, author, long_about = None)]
 struct Arguments {
 	/// The directory to search in
 	#[clap(default_value_t = String::from("."))]
@@ -24,6 +22,10 @@ struct Arguments {
 	/// Push commits to remote
 	#[clap(short, long)]
 	push: bool,
+
+	/// Don't trim output
+	#[clap(short, long)]
+	notrim: bool,
 }
 
 fn main() {
@@ -43,16 +45,39 @@ fn main() {
 	);
 
 	// Get absolute path
-	let search_directory = Path::new(&args.directory)
-		.canonicalize()
-		.expect("Could not get absolute path");
+	let search_directory = match Path::new(&args.directory).canonicalize() {
+		Ok(path) => path,
+		Err(err) => {
+			println_label(
+				OutputLabel::Error,
+				format!(
+					"Could not get absolute path of specified directory: {}",
+					err
+				),
+			);
+
+			return;
+		}
+	};
 
 	// Start the timer
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos =
-		crawl_directory_for_repos(&search_directory).expect("Could not read folder content");
+	let repos = match crawl_directory_for_repos(&search_directory) {
+		Ok(repos) => repos,
+		Err(err) => {
+			println_label(
+				OutputLabel::Error,
+				format!(
+					"Something went wrong while trying to crawl the directory: {}",
+					err
+				),
+			);
+
+			return;
+		}
+	};
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
@@ -123,7 +148,7 @@ fn main() {
 					Paint::yellow(
 						ahead_branches
 							.iter()
-							.map(|branch| branch.name().unwrap().unwrap())
+							.map(|branch| branch.name().unwrap().unwrap_or("<no name found>"))
 							.collect::<Vec<&str>>()
 							.join("/")
 					)

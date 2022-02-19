@@ -7,17 +7,26 @@ pub const LABEL_WIDTH: usize = 12;
 pub fn print_label<S: Into<String>>(label: OutputLabel, message: S) {
 	print!("{}\r", pretty_output(label, message));
 
-	stdout().flush().unwrap();
+	stdout().flush().unwrap_or_else(|_| {
+		eprintln!("Could not flush stdout");
+	});
 }
 
 /// Print a message with no label
 pub fn println<S: Into<String>>(message: S) {
-	println!("{}", pretty_output(OutputLabel::None, message));
+	println_label(OutputLabel::None, message);
 }
 
 /// Print a message with the specified label
 pub fn println_label<S: Into<String>>(label: OutputLabel, message: S) {
-	println!("{}", pretty_output(label, message));
+	match label {
+		OutputLabel::Error => {
+			eprintln!("{}", pretty_output(label, message));
+		}
+		_ => {
+			println!("{}", pretty_output(label, message));
+		}
+	}
 }
 
 /// The enum of possible output labels

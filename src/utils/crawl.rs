@@ -27,7 +27,7 @@ pub fn crawl_directory_for_repos(dir: &Path) -> IoResult<Vec<Repository>> {
 			});
 		}
 	})
-	.unwrap();
+	.unwrap_or_else(|_| eprintln!("Could not spawn threads"));
 
 	let mut repositories = Vec::new();
 	while let Some(repo) = repos.pop() {
@@ -54,7 +54,13 @@ fn crawl(
 		};
 
 		for entry in dir_content {
-			let path = entry.expect("Couldn't read file or directory").path();
+			let path = match entry {
+				Ok(entry) => entry.path(),
+				Err(err) => {
+					println_label(OutputLabel::Error, format!("in {}: {}", dir.display(), err));
+					return Ok(());
+				}
+			};
 
 			if path.is_symlink() {
 				continue;

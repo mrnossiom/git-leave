@@ -21,11 +21,17 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	// For each, check is a branch is ahead of its remote counterpart
 
 	// Get all local branches
-	let local_branches = repo
-		.branches(Some(BranchType::Local))
-		.expect("Could not get local branches")
-		.map(|b| b.unwrap().0)
-		.collect::<Vec<Branch>>();
+	let local_branches = match repo.branches(Some(BranchType::Local)) {
+		Ok(branches) => branches.map(|b| b.unwrap().0).collect::<Vec<Branch>>(),
+		Err(err) => {
+			println_label(
+				OutputLabel::Error,
+				format!("in {}: {}", repo.path().display(), err.message()),
+			);
+
+			return vec![];
+		}
+	};
 
 	let mut ahead_branches: Vec<Branch> = Vec::new();
 
@@ -33,10 +39,21 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	for branch in local_branches {
 		if let Ok(remote_branch) = branch.upstream() {
 			let (last_local_commit, last_remote_commit) = (
-				branch
-					.get()
-					.peel_to_commit()
-					.expect("could not get last commit on local branch"),
+				match branch.get().peel_to_commit() {
+					Ok(commit) => commit,
+					Err(err) => {
+						println_label(
+							OutputLabel::Error,
+							format!(
+								"in {}: could not get last commit on local branch: {}",
+								repo.path().display(),
+								err.message()
+							),
+						);
+
+						return vec![];
+					}
+				},
 				remote_branch
 					.get()
 					.peel_to_commit()
@@ -54,7 +71,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 				OutputLabel::Info("Info"),
 				format!(
 					"No upstream branch for {} in {}",
-					branch.name().unwrap().unwrap(),
+					branch.name().unwrap().unwrap_or("<no name found>"),
 					repo.path().parent().unwrap().to_str().unwrap()
 				),
 			);
