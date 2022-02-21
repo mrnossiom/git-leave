@@ -1,3 +1,4 @@
+pub mod config;
 pub mod crawl;
 pub mod git;
 

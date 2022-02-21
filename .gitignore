@@ -1,1 +1,6 @@
-/target
+# Build
+target/
+
+# Misc
+.DS_Store
+.vscode
