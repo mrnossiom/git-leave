@@ -64,6 +64,8 @@ fn main() {
 		_ => args.directory,
 	};
 
+	path = path.replace("~", home_dir().unwrap().to_str().unwrap());
+
 	// Get absolute path
 	let search_directory = match Path::new(&path).canonicalize() {
 		Ok(path) => path,
@@ -131,7 +133,7 @@ fn main() {
 					.unwrap()
 					.to_str()
 					.unwrap()
-					.replace(env!("HOME"), "~"),
+					.replace(home_dir().unwrap().as_path().to_str().unwrap(), "~"),
 			);
 		});
 	}
