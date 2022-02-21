@@ -2,11 +2,15 @@
 
 > Check for unsaved or uncommitted changes on your machine.
 
----
-
 # Usage
 
 Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default flag`.
+
+```conf
+# /path/to/.gitconfig
+[leaveTool]
+    defaultFolder = ~/path/to/projects
+```
 
 ```
 USAGE:
