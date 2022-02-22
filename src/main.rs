@@ -5,31 +5,13 @@ use clap::Parser;
 use dirs::home_dir;
 use git2::{Branch, Repository};
 use log::{println, println_label, OutputLabel};
-use std::{path::Path, time::Instant};
+use std::{path::Path, sync::atomic::Ordering, time::Instant};
 use utils::{
-	config::get_related_config,
-	crawl::crawl_directory_for_repos,
+	config::{get_related_config, Arguments, TRIM_OUTPUT},
+	crawl_directory_for_repos,
 	git::{find_ahead_branches_in_repo, is_repo_dirty},
 };
 use yansi::Paint;
-
-/// Push all commits in git repositories
-#[derive(Parser)]
-#[clap(name = "git-leave", about, version, author, long_about = None)]
-struct Arguments {
-	/// The directory to search in
-	#[clap(default_value_t = String::from("."))]
-	directory: String,
-
-	// TODO
-	/// Don't trim output path (may result in weird behavior on screen)
-	#[clap(short, long)]
-	no_trim: bool,
-
-	/// Use git config default folder value for the directory to search in
-	#[clap(short, long)]
-	default: bool,
-}
 
 fn main() {
 	// Enable coloring on Windows if possible
@@ -40,9 +22,10 @@ fn main() {
 
 	// Parse command line arguments and get related config
 	let args = Arguments::parse();
+	TRIM_OUTPUT.store(!args.no_trim, Ordering::Relaxed);
 	let config = get_related_config();
 
-	// Display the name of the program
+	// Display the name of the program and welcome the user
 	println_label(
 		OutputLabel::Success("Welcome"),
 		format!("to {}", Paint::yellow("git leave")),
@@ -55,7 +38,7 @@ fn main() {
 		Some(conf) => match (args.default, conf.default_folder) {
 			(true, Some(dir)) => dir,
 			(true, None) => {
-				println_label(OutputLabel::Warning, "No default folder set in config");
+				println_label(OutputLabel::Warning, "No default folder set in config, fallback to the one specified in the arguments");
 
 				args.directory
 			}

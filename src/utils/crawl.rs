@@ -8,56 +8,75 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-pub fn crawl_directory_for_repos(dir: &Path) -> IoResult<Vec<Repository>> {
+/// Spawn the threads needed for crawling directories
+pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> {
 	// Contains paths to explore
 	let paths = SegQueue::new();
-	paths.push(dir.to_path_buf());
+	paths.push(directory.to_path_buf());
 
-	// Contains repos
-	let repos = SegQueue::new();
+	// Contains found repositories
+	let repositories = SegQueue::new();
 
+	// Set the number of threads to use for crawling
 	let thread_count = max(8, num_cpus::get() * 2);
 
 	thread::scope(|scope| {
 		for _ in 0..thread_count {
 			scope.spawn(|_| {
 				while let Some(path) = paths.pop() {
-					crawl(path, &paths, &repos).unwrap();
+					crawl(path, &paths, &repositories).unwrap();
 				}
 			});
 		}
 	})
-	.unwrap_or_else(|_| eprintln!("Could not spawn threads"));
+	.unwrap_or_else(|_| print_label(OutputLabel::Error, "Could not spawn threads"));
 
-	let mut repositories = Vec::new();
-	while let Some(repo) = repos.pop() {
-		repositories.push(repo);
-	}
-
-	Ok(repositories)
+	// Return the repositories in a `Vec`
+	Ok(repositories.into_iter().collect::<Vec<Repository>>())
 }
 
 fn crawl(
-	dir: PathBuf,
+	directory: PathBuf,
 	path_queue: &SegQueue<PathBuf>,
-	repos: &SegQueue<Repository>,
+	repositories: &SegQueue<Repository>,
 ) -> IoResult<()> {
-	if dir.is_dir() {
-		print_label(OutputLabel::Info("Directory"), dir.display().to_string());
+	if directory.is_dir() {
+		print_label(
+			OutputLabel::Info("Directory"),
+			directory.display().to_string(),
+		);
 
-		let dir_content = match read_dir(&dir) {
+		// Return is the directory is a repo
+		if let Ok(repo) = Repository::open(&directory) {
+			// Skip bare repos
+			if !repo.is_bare() {
+				repositories.push(repo);
+
+				return Ok(());
+			}
+		}
+
+		// Get the directory contents
+		let dir_content = match read_dir(&directory) {
 			Ok(dir_content) => dir_content.collect::<Vec<_>>(),
 			Err(err) => {
-				println_label(OutputLabel::Error, format!("in {}: {}", dir.display(), err));
+				println_label(
+					OutputLabel::Error,
+					format!("in {}: {}", directory.display(), err),
+				);
 				return Ok(());
 			}
 		};
 
+		// Loop through the directory contents and add new directories to the queue
 		for entry in dir_content {
 			let path = match entry {
 				Ok(entry) => entry.path(),
 				Err(err) => {
-					println_label(OutputLabel::Error, format!("in {}: {}", dir.display(), err));
+					println_label(
+						OutputLabel::Error,
+						format!("in {}: {}", directory.display(), err),
+					);
 					return Ok(());
 				}
 			};
@@ -67,15 +86,7 @@ fn crawl(
 			}
 
 			if path.is_dir() {
-				if let Ok(repo) = Repository::open(&path) {
-					if repo.is_bare() {
-						continue;
-					}
-
-					repos.push(repo);
-				} else {
-					path_queue.push(path);
-				}
+				path_queue.push(path);
 			}
 		}
 	}

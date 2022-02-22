@@ -1,4 +1,9 @@
-use std::io::{stdout, Write};
+use crate::utils::config::TRIM_OUTPUT;
+use std::{
+	io::{stdout, Write},
+	sync::atomic::Ordering,
+};
+use term_size;
 use yansi::{Color, Style};
 
 pub const LABEL_WIDTH: usize = 12;
@@ -43,9 +48,6 @@ pub enum OutputLabel<'a> {
 
 /// Pretty a message with a given label and a given message colour
 pub fn pretty_output<S: Into<String>>(label: OutputLabel, message: S) -> String {
-	let term_width = get_term_width();
-	let message = shorten(message.into(), term_width - LABEL_WIDTH - 1);
-
 	let (label, label_color) = match label {
 		OutputLabel::Error => (String::from("Error"), Color::Red),
 		OutputLabel::Warning => (String::from("Warn"), Color::Yellow),
@@ -56,13 +58,20 @@ pub fn pretty_output<S: Into<String>>(label: OutputLabel, message: S) -> String 
 		OutputLabel::None => (String::from(""), Color::White),
 	};
 
-	return format!(
-		"{}{} {}{}",
-		" ".repeat(LABEL_WIDTH - label.len()),
-		Style::new(label_color).bold().paint(label),
-		message,
-		" ".repeat(term_width - LABEL_WIDTH - message.len() - 1),
-	);
+	let term_width = get_term_width();
+	let message = message.into();
+	let message_len = &message.len();
+
+	match TRIM_OUTPUT.load(Ordering::Acquire) {
+		true => format!(
+			"{}{} {}{}",
+			" ".repeat(LABEL_WIDTH - label.len()),
+			Style::new(label_color).bold().paint(label),
+			shorten(message, term_width - LABEL_WIDTH - 1),
+			" ".repeat(term_width - LABEL_WIDTH - message_len - 1),
+		),
+		false => format!("{} {}", label, message),
+	}
 }
 
 /// Shortens a message by omitting the middle part and replacing it with '...'
