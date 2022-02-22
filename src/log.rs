@@ -3,7 +3,6 @@ use std::{
 	io::{stdout, Write},
 	sync::atomic::Ordering,
 };
-use term_size;
 use yansi::{Color, Style};
 
 pub const LABEL_WIDTH: usize = 12;
@@ -60,16 +59,20 @@ pub fn pretty_output<S: Into<String>>(label: OutputLabel, message: S) -> String 
 
 	let term_width = get_term_width();
 	let message = message.into();
-	let message_len = &message.len();
 
 	match TRIM_OUTPUT.load(Ordering::Acquire) {
-		true => format!(
-			"{}{} {}{}",
-			" ".repeat(LABEL_WIDTH - label.len()),
-			Style::new(label_color).bold().paint(label),
-			shorten(message, term_width - LABEL_WIDTH - 1),
-			" ".repeat(term_width - LABEL_WIDTH - message_len - 1),
-		),
+		true => {
+			let shorten_message = shorten(message, term_width - LABEL_WIDTH - 1);
+
+			format!(
+				"{}{} {}{}",
+				" ".repeat(LABEL_WIDTH - label.len()),
+				Style::new(label_color).bold().paint(label),
+				shorten_message,
+				" ".repeat(term_width - LABEL_WIDTH - shorten_message.len() - 1),
+			)
+		}
+
 		false => format!("{} {}", label, message),
 	}
 }
