@@ -1,6 +1,7 @@
 use crate::log::{println_label, OutputLabel};
 use git2::{Branch, BranchType, Repository, Status};
 
+/// Check if repository has unsaved files in working or dirty directory
 pub fn is_repo_dirty(repo: &Repository) -> bool {
 	if let Ok(statuses) = repo.statuses(None) {
 		for status in statuses.iter() {
@@ -16,6 +17,7 @@ pub fn is_repo_dirty(repo: &Repository) -> bool {
 	false
 }
 
+/// Finds branches ahead of remote branches
 pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	// Iterate over all local branches
 	// For each, check is a branch is ahead of its remote counterpart

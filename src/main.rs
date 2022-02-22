@@ -49,7 +49,7 @@ fn main() {
 
 	path = path.replace("~", home_dir().unwrap().to_str().unwrap());
 
-	// Get absolute path
+	// Get absolute path to the directory to crawl
 	let search_directory = match Path::new(&path).canonicalize() {
 		Ok(path) => path,
 		Err(err) => {

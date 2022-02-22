@@ -8,12 +8,12 @@ use yansi::{Color, Style};
 
 pub const LABEL_WIDTH: usize = 12;
 
-/// Print a message with a label, add a \r at the end and flush the stdout
+/// Print a message with a label, add a carriage return at the end and flush the stdout
 pub fn print_label<S: Into<String>>(label: OutputLabel, message: S) {
 	print!("{}\r", pretty_output(label, message));
 
 	stdout().flush().unwrap_or_else(|_| {
-		eprintln!("Could not flush stdout");
+		println_label(OutputLabel::Error, "Could not flush stdout");
 	});
 }
 
