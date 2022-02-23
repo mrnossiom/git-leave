@@ -13,13 +13,8 @@ pub struct Arguments {
 	/// Use git config default folder value for the directory to search in
 	#[clap(short, long)]
 	pub default: bool,
-
-	/// Don't trim output path (useful for debugging)
-	#[clap(long)]
-	pub no_trim: bool,
 }
 
-/// The atomic bool to store the value of the `--no-trim` flag
 pub static TRIM_OUTPUT: AtomicBool = AtomicBool::new(true);
 
 // Keys used in `.gitconfig` file

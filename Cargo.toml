@@ -4,12 +4,13 @@ description = "Check for unsaved or uncommitted changes on your machine."
 authors = ["Milo Moisson <milomoisson@gmail.com>"]
 repository = "https://github.com/MrNossiom/git-leave"
 license = "MIT"
-version = "1.4.1"
+version = "1.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+atty = "0.2.14"
 clap = { version = "3.0.0", features = ["derive"] }
 crossbeam = "0.8.1"
 dirs = "4.0"

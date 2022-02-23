@@ -181,8 +181,9 @@ dependencies = [
 
 [[package]]
 name = "git-leave"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
+ "atty",
  "clap",
  "crossbeam",
  "dirs",

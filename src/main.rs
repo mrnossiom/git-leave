@@ -1,6 +1,7 @@
 mod log;
 mod utils;
 
+use atty::Stream;
 use clap::Parser;
 use dirs::home_dir;
 use git2::{Branch, Repository};
@@ -22,8 +23,13 @@ fn main() {
 
 	// Parse command line arguments and get related config
 	let args = Arguments::parse();
-	TRIM_OUTPUT.store(!args.no_trim, Ordering::Relaxed);
 	let config = get_related_config();
+
+	// If the output is piped don't trim output
+	TRIM_OUTPUT.store(
+		!(atty::is(Stream::Stdin) && atty::isnt(Stream::Stdout)),
+		Ordering::Relaxed,
+	);
 
 	// Display the name of the program and welcome the user
 	println_label(

@@ -22,6 +22,9 @@ ARGS:
 OPTIONS:
     -d, --default    Use git config default folder value for the directory to search in
     -h, --help       Print help information
-    -n, --no-trim    Don't trim output path (may result in weird behavior on screen)
     -V, --version    Print version information
 ```
+
+## Thanks
+
+-   **[woobuc/sweep](https://github.com/woobuc/sweep)** for many concept I implemented in my CLI (threads, logging)
