@@ -1,40 +1,29 @@
-mod log;
+#[macro_use]
+extern crate label_logger;
+
 mod utils;
 
-use atty::Stream;
 use clap::Parser;
 use dirs::home_dir;
 use git2::{Branch, Repository};
-use log::{println, println_label, OutputLabel};
-use std::{path::Path, sync::atomic::Ordering, time::Instant};
+use label_logger::{style, OutputLabel};
+use std::{path::Path, time::Instant};
 use utils::{
-	config::{get_related_config, Arguments, TRIM_OUTPUT},
+	config::{get_related_config, Arguments},
 	crawl_directory_for_repos,
 	git::{find_ahead_branches_in_repo, is_repo_dirty},
 };
-use yansi::Paint;
 
 fn main() {
-	// Enable coloring on Windows if possible
-	#[cfg(windows)]
-	if !Paint::enable_windows_ascii() {
-		Paint::disable();
-	}
-
 	// Parse command line arguments and get related config
 	let args = Arguments::parse();
 	let config = get_related_config();
 
-	// If the output is piped don't trim output
-	TRIM_OUTPUT.store(
-		!(atty::is(Stream::Stdin) && atty::isnt(Stream::Stdout)),
-		Ordering::Relaxed,
-	);
-
 	// Display the name of the program and welcome the user
-	println_label(
+	println!(
 		OutputLabel::Success("Welcome"),
-		format!("to {}", Paint::yellow("git leave")),
+		"to {}",
+		style("git leave").yellow(),
 	);
 
 	// Set the path to the one specified in the global config
@@ -44,7 +33,7 @@ fn main() {
 		Some(conf) => match (args.default, conf.default_folder) {
 			(true, Some(dir)) => dir,
 			(true, None) => {
-				println_label(OutputLabel::Warning, "No default folder set in config, fallback to the one specified in the arguments");
+				println!(OutputLabel::Warning, "No default folder set in config, fallback to the one specified in the arguments");
 
 				args.directory
 			}
@@ -59,12 +48,9 @@ fn main() {
 	let search_directory = match Path::new(&path).canonicalize() {
 		Ok(path) => path,
 		Err(err) => {
-			println_label(
-				OutputLabel::Error,
-				format!(
-					"Could not get absolute path of specified directory: {}",
-					err
-				),
+			eprintln!(
+				"Could not get absolute path of specified directory: {}",
+				err
 			);
 
 			return;
@@ -78,12 +64,9 @@ fn main() {
 	let repos = match crawl_directory_for_repos(&search_directory) {
 		Ok(repos) => repos,
 		Err(err) => {
-			println_label(
-				OutputLabel::Error,
-				format!(
-					"Something went wrong while trying to crawl the directory: {}",
-					err
-				),
+			eprintln!(
+				"Something went wrong while trying to crawl the directory: {}",
+				err
 			);
 
 			return;
@@ -92,31 +75,32 @@ fn main() {
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
-		println_label(OutputLabel::Info("Empty"), "No git repositories found");
+		println!(OutputLabel::Info("Empty"), "No git repositories found");
 
 		return;
 	}
 
-	println_label(
+	println!(
 		OutputLabel::Info("Found"),
-		format!(
-			"{} repositories in {}s",
-			&repos.len(),
-			begin_search_time.elapsed().as_millis() as f64 / 1000.0
-		),
+		"{} repositories in {}s",
+		&repos.len(),
+		begin_search_time.elapsed().as_millis() as f64 / 1000.0
 	);
 
 	// Check if there are dirty repositories
 	let dirty_repos: Vec<&Repository> = repos.iter().filter(|repo| is_repo_dirty(repo)).collect();
 
 	if !dirty_repos.is_empty() {
-		println_label(
+		println!(
 			OutputLabel::Info("Found"),
-			format!("{} dirty repositories", &dirty_repos.len()),
+			"{} dirty repositories",
+			&dirty_repos.len()
 		);
 
 		dirty_repos.iter().for_each(|repo| {
-			println(
+			println!(
+				_,
+				"{}",
 				repo.path()
 					.parent()
 					.unwrap()
@@ -135,35 +119,36 @@ fn main() {
 		.collect();
 
 	if !repos_with_ahead_branches.is_empty() {
-		println_label(
+		println!(
 			OutputLabel::Info("Found"),
-			format!(
-				"{} repositories that have not pushed commits to remote",
-				&repos_with_ahead_branches.len()
-			),
+			"{} repositories that have not pushed commits to remote",
+			&repos_with_ahead_branches.len()
 		);
 
 		repos_with_ahead_branches
 			.iter()
 			.for_each(|(repo, ahead_branches)| {
-				println(format!(
+				println!(
+					_,
 					"Repository {} have these branches ahead: {}",
-					Paint::yellow(
+					style(
 						repo.path()
 							.parent()
 							.unwrap()
 							.file_name()
 							.unwrap()
 							.to_string_lossy()
-					),
-					Paint::yellow(
+					)
+					.yellow(),
+					style(
 						ahead_branches
 							.iter()
 							.map(|branch| branch.name().unwrap().unwrap_or("<no name found>"))
 							.collect::<Vec<&str>>()
 							.join("/")
 					)
-				));
+					.yellow()
+				);
 			});
 	}
 }

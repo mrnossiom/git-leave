@@ -1,6 +1,6 @@
-use crate::log::{print_label, println_label, OutputLabel};
 use crossbeam::{queue::SegQueue, thread};
 use git2::Repository;
+use label_logger::OutputLabel;
 use std::{
 	cmp::max,
 	fs::read_dir,
@@ -29,7 +29,7 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 			});
 		}
 	})
-	.unwrap_or_else(|_| print_label(OutputLabel::Error, "Could not spawn threads"));
+	.unwrap_or_else(|_| eprintln!("Could not spawn threads"));
 
 	// Return the repositories in a `Vec`
 	Ok(repositories.into_iter().collect::<Vec<Repository>>())
@@ -41,8 +41,9 @@ fn crawl(
 	repositories: &SegQueue<Repository>,
 ) -> IoResult<()> {
 	if directory.is_dir() {
-		print_label(
+		print_r!(
 			OutputLabel::Info("Directory"),
+			"{}",
 			directory.display().to_string(),
 		);
 
@@ -60,10 +61,7 @@ fn crawl(
 		let dir_content = match read_dir(&directory) {
 			Ok(dir_content) => dir_content.collect::<Vec<_>>(),
 			Err(err) => {
-				println_label(
-					OutputLabel::Error,
-					format!("in {}: {}", directory.display(), err),
-				);
+				eprintln!("in {}: {}", directory.display(), err);
 				return Ok(());
 			}
 		};
@@ -73,10 +71,7 @@ fn crawl(
 			let path = match entry {
 				Ok(entry) => entry.path(),
 				Err(err) => {
-					println_label(
-						OutputLabel::Error,
-						format!("in {}: {}", directory.display(), err),
-					);
+					eprintln!("in {}: {}", directory.display(), err);
 					return Ok(());
 				}
 			};

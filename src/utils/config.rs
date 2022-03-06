@@ -1,7 +1,5 @@
-use crate::log::{println_label, OutputLabel};
 use clap::Parser;
 use git2::Config as GitConfig;
-use std::sync::atomic::AtomicBool;
 
 #[derive(Parser)]
 #[clap(name = "git-leave", about, version, author, long_about = None)]
@@ -14,8 +12,6 @@ pub struct Arguments {
 	#[clap(short, long)]
 	pub default: bool,
 }
-
-pub static TRIM_OUTPUT: AtomicBool = AtomicBool::new(true);
 
 // Keys used in `.gitconfig` file
 const CONFIG_KEY_DEFAULT_FOLDER: &str = "leaveTool.defaultFolder";
@@ -35,10 +31,7 @@ pub fn get_related_config() -> Option<GitLeaveConfig> {
 	let config = match GitConfig::open(&config_path) {
 		Ok(config) => config,
 		Err(err) => {
-			println_label(
-				OutputLabel::Error,
-				format!("Could not open global config: {}", err),
-			);
+			eprintln!("Could not open global config: {}", err);
 
 			return None;
 		}

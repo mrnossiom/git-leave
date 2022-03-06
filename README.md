@@ -7,7 +7,7 @@
 Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default flag`.
 
 ```conf
-# /path/to/.gitconfig
+# Your global .gitconfig
 [leaveTool]
     defaultFolder = ~/path/to/projects
 ```
