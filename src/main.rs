@@ -6,7 +6,7 @@ mod utils;
 use clap::Parser;
 use dirs::home_dir;
 use git2::{Branch, Repository};
-use label_logger::{style, OutputLabel};
+use label_logger::{console::style, OutputLabel};
 use std::{path::Path, time::Instant};
 use utils::{
 	config::{get_related_config, Arguments},
