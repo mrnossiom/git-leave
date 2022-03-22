@@ -14,5 +14,5 @@ clap = { version = "3.0.0", features = ["derive"] }
 crossbeam = "0.8.1"
 dirs = "4.0"
 git2 = "0.13.17"
-label-logger = "1.0.0-rc.1"
+label-logger = "1.0.0-alpha.3"
 num_cpus = "1.13.1"
