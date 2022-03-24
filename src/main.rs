@@ -6,7 +6,7 @@ mod utils;
 use clap::Parser;
 use dirs::home_dir;
 use git2::{Branch, Repository};
-use label_logger::{console::style, OutputLabel};
+use label_logger::console::style;
 use std::{path::Path, time::Instant};
 use utils::{
 	config::{get_related_config, Arguments},
@@ -20,11 +20,7 @@ fn main() {
 	let config = get_related_config();
 
 	// Display the name of the program and welcome the user
-	println!(
-		OutputLabel::Success("Welcome"),
-		"to {}",
-		style("git leave").yellow(),
-	);
+	success!("Welcome", "to {}", style("git leave").yellow(),);
 
 	// Set the path to the one specified in the global config
 	// only if the default argument is enabled,
@@ -33,7 +29,7 @@ fn main() {
 		Some(conf) => match (args.default, conf.default_folder) {
 			(true, Some(dir)) => dir,
 			(true, None) => {
-				println!(OutputLabel::Warning, "No default folder set in config, fallback to the one specified in the arguments");
+				warn!( "No default folder set in config, fallback to the one specified in the arguments");
 
 				args.directory
 			}
@@ -75,13 +71,13 @@ fn main() {
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
-		println!(OutputLabel::Info("Empty"), "No git repositories found");
+		info!("Empty", "No git repositories found");
 
 		return;
 	}
 
-	println!(
-		OutputLabel::Info("Found"),
+	info!(
+		"Found",
 		"{} repositories in {}s",
 		&repos.len(),
 		begin_search_time.elapsed().as_millis() as f64 / 1000.0
@@ -91,11 +87,7 @@ fn main() {
 	let dirty_repos: Vec<&Repository> = repos.iter().filter(|repo| is_repo_dirty(repo)).collect();
 
 	if !dirty_repos.is_empty() {
-		println!(
-			OutputLabel::Info("Found"),
-			"{} dirty repositories",
-			&dirty_repos.len()
-		);
+		info!("Found", "{} dirty repositories", &dirty_repos.len());
 
 		dirty_repos.iter().for_each(|repo| {
 			println!(
@@ -119,8 +111,8 @@ fn main() {
 		.collect();
 
 	if !repos_with_ahead_branches.is_empty() {
-		println!(
-			OutputLabel::Info("Found"),
+		info!(
+			"Found",
 			"{} repositories that have not pushed commits to remote",
 			&repos_with_ahead_branches.len()
 		);
