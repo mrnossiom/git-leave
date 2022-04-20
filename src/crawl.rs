@@ -1,3 +1,5 @@
+//! All the logic to crawl through directories in order to find git repos
+
 use crossbeam::{queue::SegQueue, thread};
 use git2::Repository;
 use label_logger::OutputLabel;
@@ -29,22 +31,26 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 			});
 		}
 	})
-	.unwrap_or_else(|_| eprintln!("Could not spawn threads"));
+	.unwrap_or_else(|_| error!("Could not spawn threads"));
 
 	// Return the repositories in a `Vec`
 	Ok(repositories.into_iter().collect::<Vec<Repository>>())
 }
 
+/// The actual crawling function
+/// Search for git repositories and report folder to the given queue
 fn crawl(
 	directory: PathBuf,
 	path_queue: &SegQueue<PathBuf>,
 	repositories: &SegQueue<Repository>,
 ) -> IoResult<()> {
 	if directory.is_dir() {
-		print_r!(
-			OutputLabel::Info("Directory"),
-			"{}",
-			directory.display().to_string(),
+		print!(
+			"{}\r",
+			format_label!(
+				label: OutputLabel::Info("Directory"),
+				"{}",
+				directory.display().to_string(),)
 		);
 
 		// Return is the directory is a repo
@@ -61,7 +67,7 @@ fn crawl(
 		let dir_content = match read_dir(&directory) {
 			Ok(dir_content) => dir_content.collect::<Vec<_>>(),
 			Err(err) => {
-				eprintln!("in {}: {}", directory.display(), err);
+				error!("in {}: {}", directory.display(), err);
 				return Ok(());
 			}
 		};
@@ -71,7 +77,7 @@ fn crawl(
 			let path = match entry {
 				Ok(entry) => entry.path(),
 				Err(err) => {
-					eprintln!("in {}: {}", directory.display(), err);
+					error!("in {}: {}", directory.display(), err);
 					return Ok(());
 				}
 			};

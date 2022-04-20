@@ -1,5 +1,6 @@
+//! Wrappers around git2 crate to simplify some specific git operations
+
 use git2::{Branch, BranchType, Repository, Status};
-use label_logger::OutputLabel;
 
 /// Check if repository has unsaved files in working or dirty directory
 pub fn is_repo_dirty(repo: &Repository) -> bool {
@@ -26,7 +27,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	let local_branches = match repo.branches(Some(BranchType::Local)) {
 		Ok(branches) => branches.map(|b| b.unwrap().0).collect::<Vec<Branch>>(),
 		Err(err) => {
-			eprintln!("in {}: {}", repo.path().display(), err.message());
+			error!("in {}: {}", repo.path().display(), err.message());
 
 			return vec![];
 		}
@@ -41,7 +42,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 				match branch.get().peel_to_commit() {
 					Ok(commit) => commit,
 					Err(err) => {
-						eprintln!(
+						error!(
 							"in {}: could not get last commit on local branch: {}",
 							repo.path().display(),
 							err.message()
@@ -63,8 +64,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 				ahead_branches.push(branch)
 			}
 		} else {
-			println!(
-				OutputLabel::Info("Info"),
+			info!(
 				"No upstream branch for {} in {}",
 				branch.name().unwrap().unwrap_or("<no name found>"),
 				repo.path().parent().unwrap().to_str().unwrap()

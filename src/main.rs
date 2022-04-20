@@ -1,18 +1,24 @@
+#![warn(clippy::missing_docs_in_private_items)]
+#![doc = include_str!("../README.md")]
+
 #[macro_use]
 extern crate label_logger;
 
-mod utils;
+mod config;
+mod crawl;
+mod git;
 
+use crate::{
+	config::{get_related_config, Arguments},
+	crawl::crawl_directory_for_repos,
+	git::{find_ahead_branches_in_repo, is_repo_dirty},
+};
 use clap::Parser;
+use console::Term;
 use dirs::home_dir;
 use git2::{Branch, Repository};
 use label_logger::console::style;
 use std::{path::Path, time::Instant};
-use utils::{
-	config::{get_related_config, Arguments},
-	crawl_directory_for_repos,
-	git::{find_ahead_branches_in_repo, is_repo_dirty},
-};
 
 fn main() {
 	// Parse command line arguments and get related config
@@ -20,7 +26,7 @@ fn main() {
 	let config = get_related_config();
 
 	// Display the name of the program and welcome the user
-	success!("Welcome", "to {}", style("git leave").yellow(),);
+	success!(label: "Welcome", "to {}", style("git leave").yellow());
 
 	// Set the path to the one specified in the global config
 	// only if the default argument is enabled,
@@ -44,7 +50,7 @@ fn main() {
 	let search_directory = match Path::new(&path).canonicalize() {
 		Ok(path) => path,
 		Err(err) => {
-			eprintln!(
+			error!(
 				"Could not get absolute path of specified directory: {}",
 				err
 			);
@@ -60,7 +66,7 @@ fn main() {
 	let repos = match crawl_directory_for_repos(&search_directory) {
 		Ok(repos) => repos,
 		Err(err) => {
-			eprintln!(
+			error!(
 				"Something went wrong while trying to crawl the directory: {}",
 				err
 			);
@@ -69,15 +75,17 @@ fn main() {
 		}
 	};
 
+	Term::stdout().clear_line().unwrap();
+
 	// Exit if no git repositories were found
 	if repos.is_empty() {
-		info!("Empty", "No git repositories found");
+		info!(label: "Empty", "No git repositories found");
 
 		return;
 	}
 
 	info!(
-		"Found",
+		label: "Found",
 		"{} repositories in {}s",
 		&repos.len(),
 		begin_search_time.elapsed().as_millis() as f64 / 1000.0
@@ -87,11 +95,10 @@ fn main() {
 	let dirty_repos: Vec<&Repository> = repos.iter().filter(|repo| is_repo_dirty(repo)).collect();
 
 	if !dirty_repos.is_empty() {
-		info!("Found", "{} dirty repositories", &dirty_repos.len());
+		info!(label: "Found", "{} dirty repositories", &dirty_repos.len());
 
 		dirty_repos.iter().for_each(|repo| {
-			println!(
-				_,
+			log!(
 				"{}",
 				repo.path()
 					.parent()
@@ -112,7 +119,7 @@ fn main() {
 
 	if !repos_with_ahead_branches.is_empty() {
 		info!(
-			"Found",
+			label: "Found",
 			"{} repositories that have not pushed commits to remote",
 			&repos_with_ahead_branches.len()
 		);
@@ -120,8 +127,7 @@ fn main() {
 		repos_with_ahead_branches
 			.iter()
 			.for_each(|(repo, ahead_branches)| {
-				println!(
-					_,
+				log!(
 					"Repository {} have these branches ahead: {}",
 					style(
 						repo.path()

@@ -1,6 +1,9 @@
+//! Parse CLI arguments and local user config
+
 use clap::Parser;
 use git2::Config as GitConfig;
 
+/// Check for unsaved or uncommitted changes on your machine.
 #[derive(Parser)]
 #[clap(name = "git-leave", about, version, author, long_about = None)]
 pub struct Arguments {
@@ -14,10 +17,12 @@ pub struct Arguments {
 }
 
 // Keys used in `.gitconfig` file
+/// The key used to store the default folder in `.gitconfig`
 const CONFIG_KEY_DEFAULT_FOLDER: &str = "leaveTool.defaultFolder";
 
 /// Contains all the parsed configuration keys for this tool
 pub struct GitLeaveConfig {
+	/// The default folder to search in when using the `--default` argument
 	pub default_folder: Option<String>,
 }
 
@@ -31,7 +36,7 @@ pub fn get_related_config() -> Option<GitLeaveConfig> {
 	let config = match GitConfig::open(&config_path) {
 		Ok(config) => config,
 		Err(err) => {
-			eprintln!("Could not open global config: {}", err);
+			error!("Could not open global config: {}", err);
 
 			return None;
 		}
@@ -42,7 +47,7 @@ pub fn get_related_config() -> Option<GitLeaveConfig> {
 	})
 }
 
-// Correctly parse string value for a given key
+/// Correctly parse string value for a given key
 fn get_key_string_value(config: &GitConfig, key: &str) -> Option<String> {
 	let string_value = match config.get_string(key) {
 		Ok(value) => value,

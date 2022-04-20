@@ -11,8 +11,9 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.0.0", features = ["derive"] }
+console = "0.15.0"
 crossbeam = "0.8.1"
 dirs = "4.0"
 git2 = "0.13.17"
-label-logger = "1.0.0-alpha.6"
+label-logger = "1.0.0-alpha.8"
 num_cpus = "1.13.1"
