@@ -34,7 +34,7 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 	.unwrap_or_else(|_| error!("Could not spawn threads"));
 
 	// Return the repositories in a `Vec`
-	Ok(repositories.into_iter().collect::<Vec<Repository>>())
+	Ok(repositories.into_iter().collect::<Vec<_>>())
 }
 
 /// The actual crawling function
@@ -50,7 +50,8 @@ fn crawl(
 			format_label!(
 				label: OutputLabel::Info("Directory"),
 				"{}",
-				directory.display().to_string(),)
+				directory.display().to_string()
+			)
 		);
 
 		// Return is the directory is a repo
