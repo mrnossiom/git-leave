@@ -1,4 +1,4 @@
-#![warn(clippy::missing_docs_in_private_items)]
+#![warn(clippy::missing_docs_in_private_items, clippy::unwrap_used)]
 #![doc = include_str!("../README.md")]
 
 #[macro_use]
@@ -14,16 +14,23 @@ use crate::{
 	git::{find_ahead_branches_in_repo, is_repo_dirty},
 };
 use clap::Parser;
+use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
 use git2::{Branch, Repository};
 use label_logger::console::style;
 use std::{path::Path, time::Instant};
 
-fn main() {
+fn main() -> color_eyre::Result<()> {
+	color_eyre::install()?;
+
 	// Parse command line arguments and get related config
 	let args = Arguments::parse();
 	let config = get_related_config();
+	let home_dir_path = home_dir().wrap_err("Could not get your home directory")?;
+	let home_dir = home_dir_path
+		.to_str()
+		.wrap_err("Your home directory is not valid UTF-8")?;
 
 	// Display the name of the program and welcome the user
 	success!(label: "Welcome", "to {}", style("git leave").yellow());
@@ -35,7 +42,7 @@ fn main() {
 		Some(conf) => match (args.default, conf.default_folder) {
 			(true, Some(dir)) => dir,
 			(true, None) => {
-				warn!( "No default folder set in config, fallback to the one specified in the arguments");
+				warn!("No default folder set in config, fallback to the one specified in the arguments");
 
 				args.directory
 			}
@@ -44,44 +51,27 @@ fn main() {
 		_ => args.directory,
 	};
 
-	path = path.replace('~', home_dir().unwrap().to_str().unwrap());
+	path = path.replacen('~', home_dir, 1);
 
 	// Get absolute path to the directory to crawl
-	let search_directory = match Path::new(&path).canonicalize() {
-		Ok(path) => path,
-		Err(err) => {
-			error!(
-				"Could not get absolute path of specified directory: {}",
-				err
-			);
-
-			return;
-		}
-	};
+	let search_directory = Path::new(&path)
+		.canonicalize()
+		.wrap_err("Could not get absolute path of specified directory")?;
 
 	// Start the timer
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = match crawl_directory_for_repos(&search_directory) {
-		Ok(repos) => repos,
-		Err(err) => {
-			error!(
-				"Something went wrong while trying to crawl the directory: {}",
-				err
-			);
+	let repos = crawl_directory_for_repos(&search_directory)
+		.wrap_err("Something went wrong while trying to crawl the directory")?;
 
-			return;
-		}
-	};
-
-	Term::stdout().clear_line().unwrap();
+	Term::stdout().clear_line().ok();
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
 		info!(label: "Empty", "No git repositories found");
 
-		return;
+		return Ok(());
 	}
 
 	info!(
@@ -102,10 +92,12 @@ fn main() {
 				"{}",
 				repo.path()
 					.parent()
-					.unwrap()
+					.expect(
+						"Repository path points to a `.git` subdirectory, it always has a parent"
+					)
 					.to_str()
-					.unwrap()
-					.replace(home_dir().unwrap().as_path().to_str().unwrap(), "~"),
+					.expect("Parent directory is not valid UTF-8")
+					.replace(home_dir, "~"),
 			);
 		});
 	}
@@ -132,16 +124,19 @@ fn main() {
 					style(
 						repo.path()
 							.parent()
-							.unwrap()
+							.expect("Repository path points to a `.git` subdirectory, it always has a parent")
 							.file_name()
-							.unwrap()
+							.expect("parent has an absolute name")
 							.to_string_lossy()
 					)
 					.yellow(),
 					style(
 						ahead_branches
 							.iter()
-							.map(|branch| branch.name().unwrap().unwrap_or("<no name found>"))
+							.map(|branch| branch
+								.name()
+								.expect("Found an ahead branch with non valid UTF-8")
+								.unwrap_or("<no name found>"))
 							.collect::<Vec<&str>>()
 							.join("/")
 					)
@@ -149,4 +144,6 @@ fn main() {
 				);
 			});
 	}
+
+	Ok(())
 }

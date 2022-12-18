@@ -25,7 +25,10 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 
 	// Get all local branches
 	let local_branches = match repo.branches(Some(BranchType::Local)) {
-		Ok(branches) => branches.map(|b| b.unwrap().0).collect::<Vec<Branch>>(),
+		Ok(branches) => branches
+			.filter_map(|branch| branch.ok())
+			.map(|(branch, _branch_type)| branch)
+			.collect::<Vec<Branch>>(),
 		Err(err) => {
 			error!("in {}: {}", repo.path().display(), err.message());
 
@@ -66,8 +69,16 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 		} else {
 			info!(
 				"No upstream branch for {} in {}",
-				branch.name().unwrap().unwrap_or("<no name found>"),
-				repo.path().parent().unwrap().to_str().unwrap()
+				branch
+					.name()
+					.expect("Found a branch with non valid UTF-8")
+					.unwrap_or("<no name found>"),
+				repo.path()
+					.parent()
+					.expect(
+						"Repository path points to a `.git` subdirectory, it always has a parent"
+					)
+					.to_string_lossy()
 			);
 		}
 	}

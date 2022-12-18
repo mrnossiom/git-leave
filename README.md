@@ -1,10 +1,10 @@
-# Git Leave
+# `git leave`
 
-> Check for unsaved or uncommitted changes on your machine.
+###### Check for unsaved or uncommitted changes on your machine.
 
 # Usage
 
-Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default flag`.
+Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default` or `-d` flag.
 
 ```conf
 # Your global .gitconfig

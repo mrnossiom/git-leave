@@ -26,7 +26,9 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 		for _ in 0..thread_count {
 			scope.spawn(|_| {
 				while let Some(path) = paths.pop() {
-					crawl(path, &paths, &repositories).unwrap();
+					if let Err(error) = crawl(&path, &paths, &repositories) {
+						error!("could not crawl {}: {}", path.display(), error);
+					};
 				}
 			});
 		}
@@ -40,7 +42,7 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 /// The actual crawling function
 /// Search for git repositories and report folder to the given queue
 fn crawl(
-	directory: PathBuf,
+	directory: &PathBuf,
 	path_queue: &SegQueue<PathBuf>,
 	repositories: &SegQueue<Repository>,
 ) -> IoResult<()> {
@@ -55,7 +57,7 @@ fn crawl(
 		);
 
 		// Return is the directory is a repo
-		if let Ok(repo) = Repository::open(&directory) {
+		if let Ok(repo) = Repository::open(directory) {
 			// Skip bare repos
 			if !repo.is_bare() {
 				repositories.push(repo);
@@ -65,13 +67,15 @@ fn crawl(
 		}
 
 		// Get the directory contents
-		let dir_content = match read_dir(&directory) {
+		let dir_content = match read_dir(directory) {
 			Ok(dir_content) => dir_content.collect::<Vec<_>>(),
 			Err(err) => {
 				error!("in {}: {}", directory.display(), err);
 				return Ok(());
 			}
 		};
+
+		// TODO: skip if the directory has a large number of subdirectories, add a flag to control this behaviour
 
 		// Loop through the directory contents and add new directories to the queue
 		for entry in dir_content {
