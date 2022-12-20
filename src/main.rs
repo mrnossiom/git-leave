@@ -18,7 +18,8 @@ use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
 use git2::{Branch, Repository};
-use label_logger::console::style;
+use indicatif::ProgressBar;
+use label_logger::{console::style, indicatif::label_theme, info, log, success, warn, OutputLabel};
 use std::{path::Path, time::Instant};
 
 fn main() -> color_eyre::Result<()> {
@@ -78,16 +79,28 @@ fn main() -> color_eyre::Result<()> {
 		label: "Found",
 		"{} repositories in {}s",
 		&repos.len(),
-		begin_search_time.elapsed().as_millis() as f64 / 1000.0
+		begin_search_time.elapsed().as_millis() / 1000
 	);
 
+	let dirty_bar =
+		ProgressBar::new(repos.len() as u64).with_style(label_theme(OutputLabel::Info("Progress")));
+
 	// Check if there are dirty repositories
-	let dirty_repos: Vec<&Repository> = repos.iter().filter(|repo| is_repo_dirty(repo)).collect();
+	let dirty_repos: Vec<&Repository> = repos
+		.iter()
+		.filter(|repo| {
+			let is_dirty = is_repo_dirty(repo);
+			dirty_bar.inc(1);
+			is_dirty
+		})
+		.collect();
+
+	dirty_bar.finish();
 
 	if !dirty_repos.is_empty() {
 		info!(label: "Found", "{} dirty repositories", &dirty_repos.len());
 
-		dirty_repos.iter().for_each(|repo| {
+		for repo in &dirty_repos {
 			log!(
 				"{}",
 				repo.path()
@@ -99,15 +112,24 @@ fn main() -> color_eyre::Result<()> {
 					.expect("Parent directory is not valid UTF-8")
 					.replace(home_dir, "~"),
 			);
-		});
+		}
 	}
+
+	let ahead_bar =
+		ProgressBar::new(repos.len() as u64).with_style(label_theme(OutputLabel::Info("Progress")));
 
 	// Check if a repo has any local ahead branch
 	let repos_with_ahead_branches: Vec<(&Repository, Vec<Branch>)> = repos
 		.iter()
-		.map(|repo| (repo, find_ahead_branches_in_repo(repo)))
+		.map(|repo| {
+			let ret = (repo, find_ahead_branches_in_repo(repo));
+			ahead_bar.inc(1);
+			ret
+		})
 		.filter(|vec| !vec.1.is_empty())
 		.collect();
+
+	ahead_bar.finish();
 
 	if !repos_with_ahead_branches.is_empty() {
 		info!(
@@ -116,10 +138,8 @@ fn main() -> color_eyre::Result<()> {
 			&repos_with_ahead_branches.len()
 		);
 
-		repos_with_ahead_branches
-			.iter()
-			.for_each(|(repo, ahead_branches)| {
-				log!(
+		for (repo, ahead_branches) in &repos_with_ahead_branches {
+			log!(
 					"Repository {} have these branches ahead: {}",
 					style(
 						repo.path()
@@ -142,7 +162,7 @@ fn main() -> color_eyre::Result<()> {
 					)
 					.yellow()
 				);
-			});
+		}
 	}
 
 	Ok(())

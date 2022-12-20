@@ -2,16 +2,18 @@
 
 use crossbeam::{queue::SegQueue, thread};
 use git2::Repository;
-use label_logger::OutputLabel;
+use indicatif::ProgressBar;
+use label_logger::{error, indicatif::label_theme, OutputLabel};
+
 use std::{
 	cmp::max,
 	fs::read_dir,
-	io::Result as IoResult,
+	io,
 	path::{Path, PathBuf},
 };
 
 /// Spawn the threads needed for crawling directories
-pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> {
+pub fn crawl_directory_for_repos(directory: &Path) -> io::Result<Vec<Repository>> {
 	// Contains paths to explore
 	let paths = SegQueue::new();
 	paths.push(directory.to_path_buf());
@@ -22,11 +24,13 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 	// Set the number of threads to use for crawling
 	let thread_count = max(8, num_cpus::get() * 2);
 
+	let dirty_bar = ProgressBar::new(1_u64).with_style(label_theme(OutputLabel::Info("Crawling")));
+
 	thread::scope(|scope| {
 		for _ in 0..thread_count {
 			scope.spawn(|_| {
 				while let Some(path) = paths.pop() {
-					if let Err(error) = crawl(&path, &paths, &repositories) {
+					if let Err(error) = crawl(&path, &paths, &repositories, &dirty_bar) {
 						error!("could not crawl {}: {}", path.display(), error);
 					};
 				}
@@ -34,6 +38,8 @@ pub fn crawl_directory_for_repos(directory: &Path) -> IoResult<Vec<Repository>> 
 		}
 	})
 	.unwrap_or_else(|_| error!("Could not spawn threads"));
+
+	dirty_bar.finish_and_clear();
 
 	// Return the repositories in a `Vec`
 	Ok(repositories.into_iter().collect::<Vec<_>>())
@@ -45,16 +51,12 @@ fn crawl(
 	directory: &PathBuf,
 	path_queue: &SegQueue<PathBuf>,
 	repositories: &SegQueue<Repository>,
-) -> IoResult<()> {
+	dirty_bar: &ProgressBar,
+) -> io::Result<()> {
 	if directory.is_dir() {
-		print!(
-			"{}\r",
-			format_label!(
-				label: OutputLabel::Info("Directory"),
-				"{}",
-				directory.display().to_string()
-			)
-		);
+		// TODO: not sure we let this here
+		dirty_bar.set_message(directory.display().to_string());
+		dirty_bar.inc(1);
 
 		// Return is the directory is a repo
 		if let Ok(repo) = Repository::open(directory) {
@@ -93,6 +95,7 @@ fn crawl(
 
 			if path.is_dir() {
 				path_queue.push(path);
+				dirty_bar.inc_length(1);
 			}
 		}
 	}

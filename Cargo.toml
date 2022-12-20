@@ -16,5 +16,10 @@ console = "0.15.2"
 crossbeam = "0.8.2"
 dirs = "4.0"
 git2 = "0.15.0"
-label-logger = "1.0.0-alpha.9"
+indicatif = "0.17.2"
 num_cpus = "1.14.0"
+
+[dependencies.label-logger]
+git = "https://github.com/MrNossiom/label-logger"
+rev = "94d8ea7"
+features = ["indicatif"]

@@ -1,21 +1,19 @@
 //! Wrappers around git2 crate to simplify some specific git operations
 
-use git2::{Branch, BranchType, Repository, Status};
+use git2::{Branch, BranchType, Repository, Status, StatusOptions, Statuses};
+use label_logger::{error, info};
+
+// TODO: merge both function into a large one
 
 /// Check if repository has unsaved files in working or dirty directory
 pub fn is_repo_dirty(repo: &Repository) -> bool {
-	if let Ok(statuses) = repo.statuses(None) {
-		for status in statuses.iter() {
-			match status.status() {
-				Status::IGNORED => continue,
-				_ => {
-					return true;
-				}
-			}
-		}
-	}
+	let mut options = StatusOptions::new();
+	options.include_ignored(false);
 
-	false
+	repo.statuses(Some(&mut options))
+		.iter()
+		.flat_map(Statuses::iter)
+		.any(|status| status.status() != Status::IGNORED)
 }
 
 /// Finds branches ahead of remote branches
@@ -26,7 +24,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 	// Get all local branches
 	let local_branches = match repo.branches(Some(BranchType::Local)) {
 		Ok(branches) => branches
-			.filter_map(|branch| branch.ok())
+			.filter_map(Result::ok)
 			.map(|(branch, _branch_type)| branch)
 			.collect::<Vec<Branch>>(),
 		Err(err) => {
@@ -64,7 +62,7 @@ pub fn find_ahead_branches_in_repo(repo: &Repository) -> Vec<Branch> {
 				.graph_descendant_of(last_local_commit.id(), last_remote_commit.id())
 				.expect("could not get graph difference between commits")
 			{
-				ahead_branches.push(branch)
+				ahead_branches.push(branch);
 			}
 		} else {
 			info!(

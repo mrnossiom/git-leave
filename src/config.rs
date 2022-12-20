@@ -2,6 +2,7 @@
 
 use clap::Parser;
 use git2::Config as GitConfig;
+use label_logger::error;
 
 /// Check for unsaved or uncommitted changes on your machine.
 #[derive(Parser)]
@@ -21,30 +22,32 @@ pub struct Arguments {
 const CONFIG_KEY_DEFAULT_FOLDER: &str = "leaveTool.defaultFolder";
 
 /// Contains all the parsed configuration keys for this tool
-pub struct GitLeaveConfig {
+pub struct Config {
 	/// The default folder to search in when using the `--default` argument
 	pub default_folder: Option<String>,
 }
 
-/// Return all config entries related to this tool
-pub fn get_related_config() -> Option<GitLeaveConfig> {
-	let config_path = match GitConfig::find_global() {
-		Ok(path) => path,
-		_ => return None,
-	};
+impl Config {
+	/// Parse the global git config file and return the keys we are interested in.
+	pub fn from_git_config() -> Option<Self> {
+		let config_path = match GitConfig::find_global() {
+			Ok(path) => path,
+			_ => return None,
+		};
 
-	let config = match GitConfig::open(&config_path) {
-		Ok(config) => config,
-		Err(err) => {
-			error!("Could not open global config: {}", err);
+		let config = match GitConfig::open(&config_path) {
+			Ok(config) => config,
+			Err(err) => {
+				error!("Could not open global config: {}", err);
 
-			return None;
-		}
-	};
+				return None;
+			}
+		};
 
-	Some(GitLeaveConfig {
-		default_folder: get_key_string_value(&config, CONFIG_KEY_DEFAULT_FOLDER),
-	})
+		Some(Self {
+			default_folder: get_key_string_value(&config, CONFIG_KEY_DEFAULT_FOLDER),
+		})
+	}
 }
 
 /// Correctly parse string value for a given key
