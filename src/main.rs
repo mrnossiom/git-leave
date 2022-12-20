@@ -1,15 +1,18 @@
-#![warn(clippy::missing_docs_in_private_items, clippy::unwrap_used)]
+#![warn(
+	clippy::missing_docs_in_private_items,
+	clippy::unwrap_used,
+	clippy::nursery,
+	clippy::pedantic,
+	clippy::cargo
+)]
 #![doc = include_str!("../README.md")]
-
-#[macro_use]
-extern crate label_logger;
 
 mod config;
 mod crawl;
 mod git;
 
 use crate::{
-	config::{get_related_config, Arguments},
+	config::{Arguments, Config},
 	crawl::crawl_directory_for_repos,
 	git::{find_ahead_branches_in_repo, is_repo_dirty},
 };
@@ -27,7 +30,7 @@ fn main() -> color_eyre::Result<()> {
 
 	// Parse command line arguments and get related config
 	let args = Arguments::parse();
-	let config = get_related_config();
+	let config = Config::from_git_config();
 	let home_dir_path = home_dir().wrap_err("Could not get your home directory")?;
 	let home_dir = home_dir_path
 		.to_str()
