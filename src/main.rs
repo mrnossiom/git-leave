@@ -1,6 +1,9 @@
+//! Lol
+
 #![warn(
 	clippy::missing_docs_in_private_items,
 	clippy::unwrap_used,
+	clippy::expect_used,
 	clippy::nursery,
 	clippy::pedantic,
 	clippy::cargo
@@ -9,20 +12,18 @@
 
 mod config;
 mod crawl;
-mod git;
+mod diagnostic;
 
 use crate::{
 	config::{Arguments, Config},
-	crawl::crawl_directory_for_repos,
-	git::{find_ahead_branches_in_repo, is_repo_dirty},
+	crawl::scrawl_directory_for_repos,
+	diagnostic::Diagnostic,
 };
 use clap::Parser;
 use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
-use git2::{Branch, Repository};
-use indicatif::ProgressBar;
-use label_logger::{console::style, indicatif::label_theme, info, log, success, warn, OutputLabel};
+use label_logger::{console::style, info, log, success, warn};
 use std::{path::Path, time::Instant};
 
 fn main() -> color_eyre::Result<()> {
@@ -66,7 +67,7 @@ fn main() -> color_eyre::Result<()> {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = crawl_directory_for_repos(&search_directory)
+	let repos = scrawl_directory_for_repos(&search_directory)
 		.wrap_err("Something went wrong while trying to crawl the directory")?;
 
 	Term::stdout().clear_line().ok();
@@ -85,86 +86,50 @@ fn main() -> color_eyre::Result<()> {
 		begin_search_time.elapsed().as_millis() / 1000
 	);
 
-	let dirty_bar =
-		ProgressBar::new(repos.len() as u64).with_style(label_theme(OutputLabel::Info("Progress")));
-
-	// Check if there are dirty repositories
-	let dirty_repos: Vec<&Repository> = repos
+	let diagnostics = repos
 		.iter()
-		.filter(|repo| {
-			let is_dirty = is_repo_dirty(repo);
-			dirty_bar.inc(1);
-			is_dirty
-		})
-		.collect();
+		.map(Diagnostic::from_repo)
+		.filter_map(Result::ok)
+		.filter(Diagnostic::useful);
 
-	dirty_bar.finish();
-
-	if !dirty_repos.is_empty() {
-		info!(label: "Found", "{} dirty repositories", &dirty_repos.len());
-
-		for repo in &dirty_repos {
-			log!(
-				"{}",
-				repo.path()
-					.parent()
-					.expect(
-						"Repository path points to a `.git` subdirectory, it always has a parent"
-					)
-					.to_str()
-					.expect("Parent directory is not valid UTF-8")
-					.replace(home_dir, "~"),
-			);
-		}
-	}
-
-	let ahead_bar =
-		ProgressBar::new(repos.len() as u64).with_style(label_theme(OutputLabel::Info("Progress")));
-
-	// Check if a repo has any local ahead branch
-	let repos_with_ahead_branches: Vec<(&Repository, Vec<Branch>)> = repos
-		.iter()
-		.map(|repo| {
-			let ret = (repo, find_ahead_branches_in_repo(repo));
-			ahead_bar.inc(1);
-			ret
-		})
-		.filter(|vec| !vec.1.is_empty())
-		.collect();
-
-	ahead_bar.finish();
-
-	if !repos_with_ahead_branches.is_empty() {
+	for diagnostic in diagnostics {
 		info!(
-			label: "Found",
-			"{} repositories that have not pushed commits to remote",
-			&repos_with_ahead_branches.len()
+			label: "Repo",
+			"{} {}",
+			diagnostic.repository.path().parent()
+				.wrap_err("Repository path points to a `.git` subdirectory, it always has a parent")?
+				.to_str().wrap_err("Parent directory is not valid UTF-8")?
+				.replace(home_dir, "~"),
+			if diagnostic.is_dirty { style("is dirty").bold().yellow() } else { style("") }
 		);
 
-		for (repo, ahead_branches) in &repos_with_ahead_branches {
+		let ahead_branches = diagnostic
+			.ahead_branches
+			.iter()
+			.map(|branch| match branch.name() {
+				Ok(Some(name)) => name,
+				Ok(None) => "<no name>",
+				Err(_) => "<no UTF-8 name>",
+			})
+			.collect::<Vec<_>>();
+		if !ahead_branches.is_empty() {
+			log!("has ahead branches: {}", ahead_branches.join(", "));
+		}
+
+		let branches_no_upstream = diagnostic
+			.no_upstream_branches
+			.iter()
+			.map(|branch| match branch.name() {
+				Ok(Some(name)) => name,
+				Ok(None) => "<no name>",
+				Err(_) => "<no UTF-8 name>",
+			})
+			.collect::<Vec<_>>();
+		if !branches_no_upstream.is_empty() {
 			log!(
-					"Repository {} have these branches ahead: {}",
-					style(
-						repo.path()
-							.parent()
-							.expect("Repository path points to a `.git` subdirectory, it always has a parent")
-							.file_name()
-							.expect("parent has an absolute name")
-							.to_string_lossy()
-					)
-					.yellow(),
-					style(
-						ahead_branches
-							.iter()
-							.map(|branch| branch
-								.name()
-								.expect("Found an ahead branch with non valid UTF-8")
-								.unwrap_or("<no name found>"))
-							.collect::<Vec<&str>>()
-							.join("/")
-					)
-					.yellow()
-				);
+				"has branches with no upstream: {}",
+				branches_no_upstream.join(", ")
+			);
 		}
 	}
 
