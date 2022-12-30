@@ -7,14 +7,23 @@ use label_logger::error;
 /// Check for unsaved or uncommitted changes on your machine.
 #[derive(Parser)]
 #[clap(name = "git-leave", about, version, author, long_about = None)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Arguments {
 	/// The directory to search in
 	#[clap(default_value_t = String::from("."))]
 	pub directory: String,
 
 	/// Use git config default folder value for the directory to search in
-	#[clap(short, long)]
+	#[clap(long, short)]
 	pub default: bool,
+
+	/// Should the CLI follow symlinks
+	#[clap(long)]
+	pub follow_symlinks: bool,
+
+	/// Should we show the directories we are actually crawling
+	#[clap(long)]
+	pub show_directories: bool,
 }
 
 // Keys used in `.gitconfig` file
@@ -30,10 +39,7 @@ pub struct Config {
 impl Config {
 	/// Parse the global git config file and return the keys we are interested in.
 	pub fn from_git_config() -> Option<Self> {
-		let config_path = match GitConfig::find_global() {
-			Ok(path) => path,
-			_ => return None,
-		};
+		let Ok(config_path) = GitConfig::find_global() else { return None };
 
 		let config = match GitConfig::open(&config_path) {
 			Ok(config) => config,
@@ -52,12 +58,9 @@ impl Config {
 
 /// Correctly parse string value for a given key
 fn get_key_string_value(config: &GitConfig, key: &str) -> Option<String> {
-	let string_value = match config.get_string(key) {
-		Ok(value) => value,
-		Err(_) => return None,
-	};
+	let Ok(string_value) = config.get_string(key) else { return None };
 
-	match string_value.as_str() {
+	match &*string_value {
 		"" => None,
 		string => Some(string.to_string()),
 	}

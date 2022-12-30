@@ -1,5 +1,3 @@
-//! Lol
-
 #![warn(
 	clippy::missing_docs_in_private_items,
 	clippy::unwrap_used,
@@ -16,14 +14,14 @@ mod diagnostic;
 
 use crate::{
 	config::{Arguments, Config},
-	crawl::scrawl_directory_for_repos,
+	crawl::crawl_directory_for_repos,
 	diagnostic::Diagnostic,
 };
 use clap::Parser;
 use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
-use label_logger::{console::style, info, log, success, warn};
+use label_logger::{console::style, error, info, log, success, warn, OutputLabel};
 use std::{path::Path, time::Instant};
 
 fn main() -> color_eyre::Result<()> {
@@ -38,22 +36,22 @@ fn main() -> color_eyre::Result<()> {
 		.wrap_err("Your home directory is not valid UTF-8")?;
 
 	// Display the name of the program and welcome the user
-	success!(label: "Welcome", "to {}", style("git leave").yellow());
+	success!(label: "Welcome", "to {}", style("git leave").yellow().bold());
 
 	// Set the path to the one specified in the global config
 	// only if the default argument is enabled,
 	// else set to the path specified in the arguments.
-	let mut path = match config {
-		Some(conf) => match (args.default, conf.default_folder) {
-			(true, Some(dir)) => dir,
-			(true, None) => {
+	let mut path = match (config, args.default) {
+		(Some(git_config), true) => {
+			if let Some(directory) = git_config.default_folder {
+				directory
+			} else {
 				warn!("No default folder set in config, fallback to the one specified in the arguments");
 
-				args.directory
+				args.directory.clone()
 			}
-			(_, _) => args.directory,
-		},
-		_ => args.directory,
+		}
+		_ => args.directory.clone(),
 	};
 
 	path = path.replacen('~', home_dir, 1);
@@ -67,19 +65,21 @@ fn main() -> color_eyre::Result<()> {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = scrawl_directory_for_repos(&search_directory)
+	let repos = crawl_directory_for_repos(&search_directory, &args)
 		.wrap_err("Something went wrong while trying to crawl the directory")?;
 
-	Term::stdout().clear_line().ok();
+	if Term::stdout().is_term() {
+		Term::stdout().clear_line().ok();
+	}
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
-		info!(label: "Empty", "No git repositories found");
+		error!(label: "Found", "no git repositories");
 
 		return Ok(());
 	}
 
-	info!(
+	success!(
 		label: "Found",
 		"{} repositories in {}s",
 		&repos.len(),
@@ -100,7 +100,7 @@ fn main() -> color_eyre::Result<()> {
 				.wrap_err("Repository path points to a `.git` subdirectory, it always has a parent")?
 				.to_str().wrap_err("Parent directory is not valid UTF-8")?
 				.replace(home_dir, "~"),
-			if diagnostic.is_dirty { style("is dirty").bold().yellow() } else { style("") }
+			if diagnostic.is_dirty { style("is dirty").yellow() } else { style("") }
 		);
 
 		let ahead_branches = diagnostic
@@ -111,9 +111,14 @@ fn main() -> color_eyre::Result<()> {
 				Ok(None) => "<no name>",
 				Err(_) => "<no UTF-8 name>",
 			})
+			.map(|name| style(name).yellow().to_string())
 			.collect::<Vec<_>>();
 		if !ahead_branches.is_empty() {
-			log!("has ahead branches: {}", ahead_branches.join(", "));
+			log!(
+				label: OutputLabel::Custom(style("└")),
+				"has ahead branches: {}",
+				ahead_branches.join(", ")
+			);
 		}
 
 		let branches_no_upstream = diagnostic
@@ -124,9 +129,11 @@ fn main() -> color_eyre::Result<()> {
 				Ok(None) => "<no name>",
 				Err(_) => "<no UTF-8 name>",
 			})
+			.map(|name| style(name).yellow().to_string())
 			.collect::<Vec<_>>();
 		if !branches_no_upstream.is_empty() {
 			log!(
+				label: OutputLabel::Custom(style("└")),
 				"has branches with no upstream: {}",
 				branches_no_upstream.join(", ")
 			);

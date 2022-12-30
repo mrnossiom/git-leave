@@ -10,9 +10,14 @@ use std::{
 	io,
 	path::{Path, PathBuf},
 };
+use crate::config::Arguments;
 
 /// Spawn the threads needed for crawling directories
-pub fn scrawl_directory_for_repos(directory: &Path) -> io::Result<Vec<Repository>> {
+#[allow(clippy::module_name_repetitions)]
+pub fn crawl_directory_for_repos(
+	directory: &Path,
+	settings: &Arguments
+) -> io::Result<Vec<Repository>> {
 	// Contains paths to explore
 	let paths = SegQueue::new();
 	paths.push(directory.to_path_buf());
@@ -29,7 +34,7 @@ pub fn scrawl_directory_for_repos(directory: &Path) -> io::Result<Vec<Repository
 		for _ in 0..thread_count {
 			scope.spawn(|_| {
 				while let Some(path) = paths.pop() {
-					if let Err(error) = crawl(&path, &paths, &repositories, &dirty_bar) {
+					if let Err(error) = crawl(&path, &paths, &repositories, &dirty_bar, settings) {
 						let msg = format_label!(label: OutputLabel::Error("Error"), "could not crawl {}: {}", path.display(), error);
 						dirty_bar.println(msg);
 					};
@@ -47,17 +52,20 @@ pub fn scrawl_directory_for_repos(directory: &Path) -> io::Result<Vec<Repository
 	Ok(repositories.into_iter().collect::<Vec<_>>())
 }
 
-/// The actual crawling function
+// TODO: make tests for this function
 /// Search for git repositories and report folder to the given queue
 fn crawl(
 	directory: &PathBuf,
 	path_queue: &SegQueue<PathBuf>,
 	repositories: &SegQueue<Repository>,
 	dirty_bar: &ProgressBar,
+	settings: &Arguments
 ) -> io::Result<()> {
 	if directory.is_dir() {
-		// TODO: not sure we let this here
-		dirty_bar.set_message(directory.display().to_string());
+		if settings.show_directories {
+			dirty_bar.set_message(directory.display().to_string());
+		}
+		
 		dirty_bar.inc(1);
 
 		// Return is the directory is a repo
@@ -70,14 +78,12 @@ fn crawl(
 			}
 		}
 
-		// TODO: skip if the directory has a large number of subdirectories, add a flag to control this behaviour
 
 		// Loop through the directory contents and add new directories to the queue
 		for entry in read_dir(directory)? {
 			let path = entry.map(|entry| entry.path())?;
 
-			// TODO: follow symlinks, add a setting flag
-			if path.is_symlink() {
+			if path.is_symlink() && !settings.follow_symlinks {
 				continue;
 			}
 
