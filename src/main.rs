@@ -6,6 +6,9 @@
 	clippy::pedantic,
 	clippy::cargo
 )]
+#![doc(
+	html_logo_url = "https://raw.githubusercontent.com/MrNossiom/git-leave/main/assets/logo.png"
+)]
 #![doc = include_str!("../README.md")]
 
 mod config;

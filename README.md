@@ -1,4 +1,4 @@
-# `git leave`
+![Git Leave Logo](assets/logo.png)
 
 ###### Check for unsaved or uncommitted changes on your machine.
 
@@ -25,6 +25,6 @@ OPTIONS:
     -V, --version    Print version information
 ```
 
-## Thanks
+## Credits
 
 -   **[woobuc/sweep](https://github.com/woobuc/sweep)** for many concept I implemented in my CLI (threads, logging)
