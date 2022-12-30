@@ -1,5 +1,6 @@
 //! All the logic to crawl through directories in order to find git repos
 
+use crate::config::Arguments;
 use crossbeam::{queue::SegQueue, thread};
 use git2::Repository;
 use indicatif::ProgressBar;
@@ -10,13 +11,12 @@ use std::{
 	io,
 	path::{Path, PathBuf},
 };
-use crate::config::Arguments;
 
 /// Spawn the threads needed for crawling directories
 #[allow(clippy::module_name_repetitions)]
 pub fn crawl_directory_for_repos(
 	directory: &Path,
-	settings: &Arguments
+	settings: &Arguments,
 ) -> io::Result<Vec<Repository>> {
 	// Contains paths to explore
 	let paths = SegQueue::new();
@@ -43,7 +43,7 @@ pub fn crawl_directory_for_repos(
 		}
 	})
 	.map_err(|err| io::Error::new(
-		io::ErrorKind::Other, 
+		io::ErrorKind::Other,
 		format!("could not spawn threads because of error of type: {:?}", err.type_id())
 	))?;
 
@@ -59,13 +59,13 @@ fn crawl(
 	path_queue: &SegQueue<PathBuf>,
 	repositories: &SegQueue<Repository>,
 	dirty_bar: &ProgressBar,
-	settings: &Arguments
+	settings: &Arguments,
 ) -> io::Result<()> {
 	if directory.is_dir() {
 		if settings.show_directories {
 			dirty_bar.set_message(directory.display().to_string());
 		}
-		
+
 		dirty_bar.inc(1);
 
 		// Return is the directory is a repo
@@ -77,7 +77,6 @@ fn crawl(
 				return Ok(());
 			}
 		}
-
 
 		// Loop through the directory contents and add new directories to the queue
 		for entry in read_dir(directory)? {
