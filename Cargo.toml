@@ -14,7 +14,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0.32", features = ["derive"] }
 color-eyre = "0.6.2"
-console = "0.15.2"
+console = "0.15.3"
 crossbeam = "0.8.2"
 dirs = "4.0"
 git2 = "0.15.0"
@@ -23,5 +23,5 @@ num_cpus = "1.15.0"
 
 [dependencies.label-logger]
 git = "https://github.com/MrNossiom/label-logger"
-rev = "94d8ea7"
+rev = "60c65c0"
 features = ["indicatif"]
