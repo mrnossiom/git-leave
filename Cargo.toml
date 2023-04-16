@@ -20,8 +20,4 @@ dirs = "5.0"
 git2 = "0.17.0"
 indicatif = "0.17.3"
 num_cpus = "1.15.0"
-
-[dependencies.label-logger]
-git = "https://github.com/MrNossiom/label-logger"
-rev = "60c65c0"
-features = ["indicatif"]
+label-logger = { version = "0.2.0", features = ["indicatif"] }
