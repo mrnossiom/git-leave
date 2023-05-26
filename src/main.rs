@@ -22,7 +22,6 @@ use crate::{
 };
 use clap::Parser;
 use color_eyre::eyre::{Context, ContextCompat};
-use console::Term;
 use dirs::home_dir;
 use label_logger::{console::style, error, info, log, success, warn, OutputLabel};
 use std::{path::Path, time::Instant};
@@ -68,12 +67,7 @@ fn main() -> color_eyre::Result<()> {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = crawl_directory_for_repos(&search_directory, &args)
-		.wrap_err("Something went wrong while trying to crawl the directory")?;
-
-	if Term::stdout().is_term() {
-		Term::stdout().clear_line().ok();
-	}
+	let repos = crawl_directory_for_repos(&search_directory, &args);
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
