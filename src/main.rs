@@ -1,5 +1,7 @@
+#![deny(unsafe_code)]
 #![warn(
 	clippy::missing_docs_in_private_items,
+	clippy::print_literal,
 	clippy::unwrap_used,
 	clippy::expect_used,
 	clippy::nursery,
@@ -25,7 +27,7 @@ use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
 use label_logger::{console::style, error, info, log, success, warn, OutputLabel};
-use std::{path::Path, time::Instant};
+use std::{borrow::Cow, path::Path, time::Instant};
 
 fn main() -> color_eyre::Result<()> {
 	color_eyre::install()?;
@@ -44,20 +46,17 @@ fn main() -> color_eyre::Result<()> {
 	// Set the path to the one specified in the global config
 	// only if the default argument is enabled,
 	// else set to the path specified in the arguments.
-	let mut path = match (config, args.default) {
-		(Some(git_config), true) => {
-			if let Some(directory) = git_config.default_folder {
-				directory
-			} else {
+	let path =
+		match (args.default, config.default_folder) {
+			(true, Some(directory)) => Cow::Owned(directory),
+			(true, None) => {
 				warn!("No default folder set in config, fallback to the one specified in the arguments");
-
-				args.directory.clone()
+				Cow::Borrowed(&args.directory)
 			}
-		}
-		_ => args.directory.clone(),
-	};
+			_ => Cow::Borrowed(&args.directory),
+		};
 
-	path = path.replacen('~', home_dir, 1);
+	let path = path.into_owned().replacen('~', home_dir, 1);
 
 	// Get absolute path to the directory to crawl
 	let search_directory = Path::new(&path)

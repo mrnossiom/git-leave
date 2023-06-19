@@ -17,13 +17,17 @@ pub struct Arguments {
 	#[clap(long, short)]
 	pub default: bool,
 
-	/// Should the CLI follow symlinks
+	/// Should we follow symlinks
 	#[clap(long)]
 	pub follow_symlinks: bool,
 
 	/// Should we show the directories we are actually crawling
 	#[clap(long)]
 	pub show_directories: bool,
+
+	/// The number of cores to use for crawling
+	#[clap(long, default_value_t = num_cpus::get())]
+	pub threads: usize,
 }
 
 // Keys used in `.gitconfig` file
@@ -31,6 +35,7 @@ pub struct Arguments {
 const CONFIG_KEY_DEFAULT_FOLDER: &str = "leaveTool.defaultFolder";
 
 /// Contains all the parsed configuration keys for this tool
+#[derive(Default)]
 pub struct Config {
 	/// The default folder to search in when using the `--default` argument
 	pub default_folder: Option<String>,
@@ -38,21 +43,21 @@ pub struct Config {
 
 impl Config {
 	/// Parse the global git config file and return the keys we are interested in.
-	pub fn from_git_config() -> Option<Self> {
-		let Ok(config_path) = GitConfig::find_global() else { return None };
+	pub fn from_git_config() -> Self {
+		let Ok(config_path) = GitConfig::find_global() else { return Self::default() };
 
 		let config = match GitConfig::open(&config_path) {
 			Ok(config) => config,
 			Err(err) => {
 				error!("Could not open global config: {}", err);
 
-				return None;
+				return Self::default();
 			}
 		};
 
-		Some(Self {
+		Self {
 			default_folder: get_key_string_value(&config, CONFIG_KEY_DEFAULT_FOLDER),
-		})
+		}
 	}
 }
 

@@ -6,7 +6,6 @@ use git2::Repository;
 use indicatif::ProgressBar;
 use label_logger::{format_label, indicatif::label_theme, OutputLabel};
 use std::{
-	cmp::max,
 	fs::read_dir,
 	io,
 	path::{Path, PathBuf},
@@ -25,13 +24,10 @@ pub fn crawl_directory_for_repos(
 	// Contains found repositories
 	let repositories = SegQueue::new();
 
-	// Set the number of threads to use for crawling
-	let thread_count = max(8, num_cpus::get() * 2);
-
 	let dirty_bar = ProgressBar::new(1).with_style(label_theme(OutputLabel::Info("Crawling")));
 
 	thread::scope(|scope| {
-		for _ in 0..thread_count {
+		for _ in 0..settings.threads {
 			scope.spawn(|_| {
 				while let Some(path) = paths.pop() {
 					if let Err(error) = crawl(&path, &paths, &repositories, &dirty_bar, settings) {
