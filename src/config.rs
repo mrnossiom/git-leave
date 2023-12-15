@@ -44,7 +44,9 @@ pub struct Config {
 impl Config {
 	/// Parse the global git config file and return the keys we are interested in.
 	pub fn from_git_config() -> Self {
-		let Ok(config_path) = GitConfig::find_global() else { return Self::default() };
+		let Ok(config_path) = GitConfig::find_global() else {
+			return Self::default();
+		};
 
 		let config = match GitConfig::open(&config_path) {
 			Ok(config) => config,
@@ -63,7 +65,9 @@ impl Config {
 
 /// Correctly parse string value for a given key
 fn get_key_string_value(config: &GitConfig, key: &str) -> Option<String> {
-	let Ok(string_value) = config.get_string(key) else { return None };
+	let Ok(string_value) = config.get_string(key) else {
+		return None;
+	};
 
 	match &*string_value {
 		"" => None,
