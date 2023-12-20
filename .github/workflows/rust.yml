@@ -1,16 +1,14 @@
-name: Rust CI
-on: [push, pull_request]
+name: Rust
+on: [ push, pull_request ]
 
 jobs:
   check:
-    name: Check, Test, Format and Clippy
+    name: Check and test Rust code
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: rustfmt, clippy
@@ -28,7 +26,7 @@ jobs:
         with:
           command: test
 
-      - name: Format Check
+      - name: Cargo Format Check
         uses: actions-rs/cargo@v1
         with:
           command: fmt
