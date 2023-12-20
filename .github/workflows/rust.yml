@@ -1,41 +1,20 @@
-name: Rust CI
+name: Rust
 on: [push, pull_request]
 
 jobs:
   check:
-    name: Check, Test, Format and Clippy
+    name: Check and test Rust code
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: rustfmt, clippy
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Cargo Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-
-      - name: Cargo Tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-      - name: Format Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Clippy Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+      - run: cargo check
+      - run: cargo test
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy -- -D warnings

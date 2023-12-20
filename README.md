@@ -2,6 +2,9 @@
 
 ###### Check for unsaved or uncommitted changes on your machine.
 
+![Nix Powered](https://img.shields.io/badge/Nix-Powered-blue?logo=nixos)
+[![Cachix Cache](https://img.shields.io/badge/cachix-mrnossiom-blue.svg)](https://mrnossiom.cachix.org)
+
 # Usage
 
 Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default` or `-d` flag.
