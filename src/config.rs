@@ -44,15 +44,10 @@ pub struct Config {
 impl Config {
 	/// Parse the global git config file and return the keys we are interested in.
 	pub fn from_git_config() -> Self {
-		let Ok(config_path) = GitConfig::find_global() else {
-			return Self::default();
-		};
-
-		let config = match GitConfig::open(&config_path) {
+		let config = match GitConfig::open_default() {
 			Ok(config) => config,
 			Err(err) => {
-				error!("Could not open global config: {}", err);
-
+				error!("could not open global config: {}", err);
 				return Self::default();
 			}
 		};

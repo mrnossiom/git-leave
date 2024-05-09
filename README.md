@@ -1,9 +1,15 @@
-![Git Leave Logo](assets/logo.png)
+<p align="center">
 
-###### Check for unsaved or uncommitted changes on your machine.
+![Git Leave Logo](https://raw.githubusercontent.com/mrnossiom/git-leave/main/assets/logo.png)
+
+<strong>
+Check for unsaved or uncommitted changes on your machine
+</strong>
 
 ![Nix Powered](https://img.shields.io/badge/Nix-Powered-blue?logo=nixos)
 [![Cachix Cache](https://img.shields.io/badge/cachix-mrnossiom-blue.svg)](https://mrnossiom.cachix.org)
+
+</p>
 
 # Usage
 
