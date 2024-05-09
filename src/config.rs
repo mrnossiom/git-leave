@@ -4,28 +4,28 @@ use clap::Parser;
 use git2::Config as GitConfig;
 use label_logger::error;
 
-/// Check for unsaved or uncommitted changes on your machine.
+/// Check for unsaved or uncommitted changes on your machine
 #[derive(Parser)]
 #[clap(name = "git-leave", about, version, author, long_about = None)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Arguments {
-	/// The directory to search in
+	/// Directory to search in
 	#[clap(default_value_t = String::from("."))]
 	pub directory: String,
 
-	/// Use git config default folder value for the directory to search in
+	/// Use default folder specified in git config for the directory to search in
 	#[clap(long, short)]
 	pub default: bool,
 
-	/// Should we follow symlinks
+	/// Follow symlinks
 	#[clap(long)]
 	pub follow_symlinks: bool,
 
-	/// Should we show the directories we are actually crawling
+	/// Show the directories we are actually crawling
 	#[clap(long)]
 	pub show_directories: bool,
 
-	/// The number of cores to use for crawling
+	/// Number of cores to use for crawling
 	#[clap(long, default_value_t = num_cpus::get())]
 	pub threads: usize,
 }
