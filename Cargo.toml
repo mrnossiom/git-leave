@@ -19,3 +19,16 @@ git2 = "0.17.2"
 indicatif = "0.17.5"
 label-logger = { version = "0.2.0", features = ["indicatif"] }
 num_cpus = "1.15.0"
+
+[lints]
+[lints.rust]
+unsafe_code = "deny"
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# cargo = { level = "warn", priority = -1 }
+
+expect_used = "warn"
+missing_docs_in_private_items = "warn"
+print_literal = "warn"
+unwrap_used = "warn"

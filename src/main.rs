@@ -1,13 +1,3 @@
-#![deny(unsafe_code)]
-#![warn(
-	clippy::missing_docs_in_private_items,
-	clippy::print_literal,
-	clippy::unwrap_used,
-	clippy::expect_used,
-	clippy::nursery,
-	clippy::pedantic,
-	clippy::cargo
-)]
 #![doc(
 	html_logo_url = "https://raw.githubusercontent.com/MrNossiom/git-leave/main/assets/logo.png"
 )]
