@@ -2,14 +2,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
 
-    flake-utils.url = "github:numtide/flake-utils";
-
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     gitignore = {
@@ -18,29 +13,54 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, gitignore }: flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, rust-overlay, gitignore }:
     let
-      overlays = [ (import rust-overlay) ];
-      pkgs = import nixpkgs { inherit system overlays; };
-      rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+      inherit (nixpkgs.lib) genAttrs;
 
-      nativeBuildInputs = with pkgs; [ rustToolchain pkg-config act ];
-      buildInputs = with pkgs; [ openssl ];
+      forAllSystems = genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+      forAllPkgs = function: forAllSystems (system: function pkgs.${system});
+
+      mkApp = (program: { type = "app"; inherit program; });
+
+      pkgs = forAllSystems (system: (import nixpkgs {
+        inherit system;
+        overlays = [ (import rust-overlay) ];
+      }));
     in
-    with pkgs;
     {
-      packages = rec {
-        git-leave = callPackage ./package.nix { inherit gitignore; };
-        default = git-leave;
-      };
-      apps = rec {
-        git-leave = flake-utils.lib.mkApp { drv = self.packages.${system}.git-leave; };
-        default = git-leave;
-      };
+      formatter = forAllPkgs (pkgs: pkgs.nixpkgs-fmt);
 
-      devShells.default = mkShell {
-        inherit buildInputs nativeBuildInputs;
-      };
-    }
-  );
+      packages = forAllPkgs (pkgs: rec {
+        default = git-leave;
+        git-leave = pkgs.callPackage ./package.nix { inherit gitignore; };
+      });
+      apps = forAllSystems (system: rec {
+        default = git-leave;
+        git-leave = mkApp (pkgs.getExe self.packages.${system}.app);
+      });
+
+      devShells = forAllPkgs (pkgs:
+        with pkgs.lib;
+        let
+          file-rust-toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+          rust-toolchain = file-rust-toolchain.override { extensions = [ "rust-analyzer" ]; };
+        in
+        {
+          default = pkgs.mkShell rec {
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              rust-toolchain
+              act
+            ];
+            buildInputs = with pkgs; [
+              openssl
+            ];
+
+            RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
+            LD_LIBRARY_PATH = makeLibraryPath buildInputs;
+
+            RUST_LOG = "";
+          };
+        });
+    };
 }
