@@ -11,6 +11,11 @@ Check for unsaved or uncommitted changes on your machine
   <a src="https://mrnossiom.cachix.org">
     <img alt="Cachix Cache" src="https://img.shields.io/badge/cachix-mrnossiom-blue.svg" />
   </a>
+  <a src="https://wakatime.com/badge/github/mrnossiom/git-leave">
+    <img alt="Time spent" src="https://wakatime.com/badge/github/mrnossiom/git-leave.svg" />
+  </a>
+</p>
+
 </p>
 
 # Installation

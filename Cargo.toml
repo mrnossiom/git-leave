@@ -1,13 +1,14 @@
 [package]
 name = "git-leave"
-version = "1.6.1"
+version = "1.6.2"
+edition = "2021"
+
 description = "Check for unsaved or uncommitted changes on your machine"
 authors = ["Milo Moisson <milomoisson@gmail.com>"]
-repository = "https://github.com/MrNossiom/git-leave"
+repository = "https://github.com/mrnossiom/git-leave"
 keywords = ["crawler", "git", "cli"]
 categories = ["development-tools"]
 license = "CECILL-2.1"
-edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.4", features = ["derive"] }
