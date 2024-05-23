@@ -8,10 +8,10 @@ Check for unsaved or uncommitted changes on your machine
 
 <p align="center">
   <img alt="Nix Powered" src="https://img.shields.io/badge/Nix-Powered-blue?logo=nixos" />
-  <a src="https://mrnossiom.cachix.org">
+  <a href="https://mrnossiom.cachix.org">
     <img alt="Cachix Cache" src="https://img.shields.io/badge/cachix-mrnossiom-blue.svg" />
   </a>
-  <a src="https://wakatime.com/badge/github/mrnossiom/git-leave">
+  <a href="https://wakatime.com/badge/github/mrnossiom/git-leave">
     <img alt="Time spent" src="https://wakatime.com/badge/github/mrnossiom/git-leave.svg" />
   </a>
 </p>
