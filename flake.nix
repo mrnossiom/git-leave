@@ -1,8 +1,6 @@
 {
   inputs = {
-    # TODO: we need rustc v1.74 or up, switch back to stable later
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
 
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
