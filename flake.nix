@@ -54,12 +54,10 @@
             ];
             buildInputs = with pkgs; [
               openssl
-            ];
+            ] ++ optionals pkgs.stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security ];
 
             RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
             LD_LIBRARY_PATH = makeLibraryPath buildInputs;
-
-            RUST_LOG = "";
           };
         });
     };
