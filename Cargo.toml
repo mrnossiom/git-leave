@@ -11,15 +11,15 @@ categories = ["development-tools"]
 license = "CECILL-2.1"
 
 [dependencies]
-clap = { version = "4.3.4", features = ["derive"] }
-color-eyre = "0.6.2"
-console = "0.15.7"
-crossbeam = "0.8.2"
+clap = { version = "4.5.13", features = ["derive"] }
+color-eyre = "0.6.3"
+console = "0.15.8"
+crossbeam = "0.8.4"
 dirs = "5.0"
-git2 = "0.17.2"
-indicatif = "0.17.5"
-label-logger = { version = "0.2.0", features = ["indicatif"] }
-num_cpus = "1.15.0"
+git2 = "0.19.0"
+indicatif = "0.17.8"
+label-logger = { version = "0.2.1", features = ["indicatif"] }
+num_cpus = "1.16.0"
 
 [lints]
 [lints.rust]
