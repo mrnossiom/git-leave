@@ -1,6 +1,6 @@
 [package]
 name = "git-leave"
-version = "1.6.2"
+version = "1.6.3"
 edition = "2021"
 
 description = "Check for unsaved or uncommitted changes on your machine"
@@ -11,15 +11,15 @@ categories = ["development-tools"]
 license = "CECILL-2.1"
 
 [dependencies]
-clap = { version = "4.5.13", features = ["derive"] }
-color-eyre = "0.6.3"
-console = "0.15.8"
-crossbeam = "0.8.4"
-dirs = "5.0"
-git2 = "0.19.0"
-indicatif = "0.17.8"
-label-logger = { version = "0.2.1", features = ["indicatif"] }
-num_cpus = "1.16.0"
+clap = { version = "4", features = ["derive"] }
+color-eyre = "0.6"
+console = "0.15"
+crossbeam = "0.8"
+dirs = "5"
+git2 = "0.19"
+indicatif = "0.17"
+label-logger = { version = "0.2", features = ["indicatif"] }
+num_cpus = "1"
 
 [lints]
 [lints.rust]
