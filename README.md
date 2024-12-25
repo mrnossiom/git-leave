@@ -8,17 +8,12 @@ Check for unsaved or uncommitted changes on your machine
 
 <p align="center">
   <img alt="Nix Powered" src="https://img.shields.io/badge/Nix-Powered-blue?logo=nixos" />
-  <a href="https://mrnossiom.cachix.org">
-    <img alt="Cachix Cache" src="https://img.shields.io/badge/cachix-mrnossiom-blue.svg" />
-  </a>
   <a href="https://wakatime.com/badge/github/mrnossiom/git-leave">
     <img alt="Time spent" src="https://wakatime.com/badge/github/mrnossiom/git-leave.svg" />
   </a>
   <a href="https://crates.io/crates/git-leave">
     <img alt="Crates.io Version" src="https://img.shields.io/crates/v/git-leave">
   </a>
-</p>
-
 </p>
 
 # Installation

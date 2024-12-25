@@ -1,10 +1,11 @@
 [package]
 name = "git-leave"
-version = "1.6.3"
-edition = "2021"
+version = "1.6.4"
+edition = "2024"
+rust-version = "1.85.0"
 
 description = "Check for unsaved or uncommitted changes on your machine"
-authors = ["Milo Moisson <milomoisson@gmail.com>"]
+authors = ["Milo Moisson <milo@wiro.world>"]
 repository = "https://github.com/mrnossiom/git-leave"
 keywords = ["crawler", "git", "cli"]
 categories = ["development-tools"]
@@ -15,15 +16,17 @@ clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
 console = "0.15"
 crossbeam = "0.8"
-dirs = "5"
-git2 = "0.19"
+dirs = "6"
+git2 = "0.20"
 indicatif = "0.17"
 label-logger = { version = "0.2", features = ["indicatif"] }
 num_cpus = "1"
 
 [lints]
 [lints.rust]
-unsafe_code = "deny"
+unsafe_code = "forbid"
+[lints.rustdoc]
+all = "warn"
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
@@ -31,5 +34,4 @@ nursery = { level = "warn", priority = -1 }
 
 expect_used = "warn"
 missing_docs_in_private_items = "warn"
-print_literal = "warn"
 unwrap_used = "warn"
