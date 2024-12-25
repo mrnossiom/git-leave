@@ -14,6 +14,9 @@ Check for unsaved or uncommitted changes on your machine
   <a href="https://wakatime.com/badge/github/mrnossiom/git-leave">
     <img alt="Time spent" src="https://wakatime.com/badge/github/mrnossiom/git-leave.svg" />
   </a>
+  <a href="https://crates.io/crates/git-leave">
+    <img alt="Crates.io Version" src="https://img.shields.io/crates/v/git-leave">
+  </a>
 </p>
 
 </p>
@@ -113,5 +116,4 @@ In `.config/git/config`, or any other git config file:
 
 ---
 
-Work is licensed under [`CECILL-2.1`](https://choosealicense.com/licenses/cecill-2.1/), a French OSS license that allows modification and distribution of the software while requiring the same license for derived works.
-
+This work is licensed under [`CeCILL-2.1`](https://choosealicense.com/licenses/cecill-2.1), a strong copyleft French OSS license. This license allows modification and distribution of the software while requiring the same license for derived works.
