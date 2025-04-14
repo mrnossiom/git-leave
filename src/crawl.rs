@@ -4,7 +4,7 @@ use crate::config::Arguments;
 use crossbeam::{queue::SegQueue, thread};
 use git2::Repository;
 use indicatif::ProgressBar;
-use label_logger::{format_label, indicatif::label_theme, OutputLabel};
+use label_logger::{OutputLabel, format_label, indicatif::label_theme};
 use std::{
 	fs::read_dir,
 	io,
@@ -33,7 +33,7 @@ pub fn crawl_directory_for_repos(
 					if let Err(error) = crawl(&path, &paths, &repositories, &dirty_bar, settings) {
 						let msg = format_label!(label: OutputLabel::Error("Error"), "could not crawl {}: {}", path.display(), error);
 						dirty_bar.println(msg);
-					};
+					}
 				}
 			});
 		}

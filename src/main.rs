@@ -16,7 +16,7 @@ use clap::Parser;
 use color_eyre::eyre::{Context, ContextCompat};
 use console::Term;
 use dirs::home_dir;
-use label_logger::{console::style, error, info, log, success, warn, OutputLabel};
+use label_logger::{OutputLabel, console::style, error, info, log, success, warn};
 use std::{borrow::Cow, path::Path, time::Instant};
 
 fn main() -> color_eyre::Result<()> {
@@ -36,15 +36,16 @@ fn main() -> color_eyre::Result<()> {
 	// Set the path to the one specified in the global config
 	// only if the default argument is enabled,
 	// else set to the path specified in the arguments.
-	let path =
-		match (args.default, config.default_folder) {
-			(true, Some(directory)) => Cow::Owned(directory),
-			(true, None) => {
-				warn!("No default folder set in config, fallback to the one specified in the arguments");
-				Cow::Borrowed(&args.directory)
-			}
-			_ => Cow::Borrowed(&args.directory),
-		};
+	let path = match (args.default, config.default_folder) {
+		(true, Some(directory)) => Cow::Owned(directory),
+		(true, None) => {
+			warn!(
+				"No default folder set in config, fallback to the one specified in the arguments"
+			);
+			Cow::Borrowed(&args.directory)
+		}
+		_ => Cow::Borrowed(&args.directory),
+	};
 
 	let path = path.into_owned().replacen('~', home_dir, 1);
 
