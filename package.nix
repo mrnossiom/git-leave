@@ -1,11 +1,6 @@
 { lib
 , rustPlatform
 , gitignore
-
-, pkg-config
-, darwin
-, openssl
-, stdenv
 }:
 
 let
@@ -22,9 +17,8 @@ rustPlatform.buildRustPackage {
 
   cargoLock = { lockFile = "${src}/Cargo.lock"; };
 
-  nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ openssl ]
-    ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+  nativeBuildInputs = [ ];
+  buildInputs = [ ];
 
   meta = {
     inherit (cargoTOML.package) description homepage license;

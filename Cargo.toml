@@ -1,6 +1,6 @@
 [package]
 name = "git-leave"
-version = "1.6.4"
+version = "1.7.0"
 edition = "2024"
 rust-version = "1.85.0"
 
@@ -13,14 +13,15 @@ license = "CECILL-2.1"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-color-eyre = "0.6"
-console = "0.15"
 crossbeam = "0.8"
-dirs = "6"
-git2 = "0.20"
-indicatif = "0.17"
-label-logger = { version = "0.2", features = ["indicatif"] }
+eyre = "0.6"
+gix = { version = "0.75", default-features = false, features = ["status", "parallel"] }
+gix-config = "0.48"
+gix-discover = "0.43"
+indicatif = "0.18"
+label-logger = { version = "0.3", features = ["indicatif"] }
 num_cpus = "1"
+rayon = "1"
 
 [lints]
 [lints.rust]
@@ -32,6 +33,5 @@ pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 # cargo = { level = "warn", priority = -1 }
 
-expect_used = "warn"
 missing_docs_in_private_items = "warn"
 unwrap_used = "warn"

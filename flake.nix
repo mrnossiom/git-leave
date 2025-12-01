@@ -1,6 +1,5 @@
 {
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     rust-overlay.url = "github:oxalica/rust-overlay";
@@ -12,7 +11,7 @@
 
   outputs = { self, nixpkgs, rust-overlay, gitignore }:
     let
-      inherit (nixpkgs.lib) genAttrs;
+      inherit (nixpkgs.lib) genAttrs getExe;
 
       forAllSystems = genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllPkgs = function: forAllSystems (system: function pkgs.${system});
@@ -33,7 +32,7 @@
       });
       apps = forAllSystems (system: rec {
         default = git-leave;
-        git-leave = mkApp (pkgs.getExe self.packages.${system}.app);
+        git-leave = mkApp (getExe self.packages.${system}.git-leave);
       });
 
       devShells = forAllPkgs (pkgs:
@@ -50,9 +49,7 @@
               act
             ];
 
-            buildInputs = with pkgs; [
-              openssl
-            ] ++ optionals pkgs.stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+            buildInputs = [ ];
 
             RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
             LD_LIBRARY_PATH = makeLibraryPath buildInputs;

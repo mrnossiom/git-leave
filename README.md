@@ -8,11 +8,11 @@ Check for unsaved or uncommitted changes on your machine
 
 <p align="center">
   <img alt="Nix Powered" src="https://img.shields.io/badge/Nix-Powered-blue?logo=nixos" />
-  <a href="https://wakatime.com/badge/github/mrnossiom/git-leave">
-    <img alt="Time spent" src="https://wakatime.com/badge/github/mrnossiom/git-leave.svg" />
-  </a>
   <a href="https://crates.io/crates/git-leave">
-    <img alt="Crates.io Version" src="https://img.shields.io/crates/v/git-leave">
+    <img alt="git-leave crates.io version" src="https://img.shields.io/crates/v/git-leave">
+  </a>
+  <a href="https://matrix.to/#/#git-leave:wiro.world">
+    <img alt="Matrix room at #git-leave:wiro.world" src="https://img.shields.io/badge/Matrix-%23git--leave%3Awiro.world-white?logo=matrix">
   </a>
 </p>
 
@@ -26,8 +26,6 @@ Install from repository with cargo:
 ```sh
 cargo install git-leave
 ```
-
-You will also need `openssl` library in path, which you can install over you prefered package manager.
 
 </details>
 
@@ -61,22 +59,25 @@ Package is reachable through `packages.${system}.default` or `packages.${system}
 
 # Usage
 
-```
+```text
 Check for unsaved or uncommitted changes on your machine
 
 Usage: git-leave [OPTIONS] [DIRECTORY]
 
 Arguments:
-  [DIRECTORY]  The directory to search in [default: .]
+  [DIRECTORY]  Directory to search in [default: .]
 
 Options:
-  -d, --default            Use git config default folder value for the directory to search in
-      --follow-symlinks    Should we follow symlinks
-      --show-directories   Should we show the directories we are actually crawling
-      --threads <THREADS>  The number of cores to use for crawling [default: number_of_cores]
-  -h, --help               Print help
+  -d, --default            Use default folder specified in git config for the directory to search in
+      --follow-symlinks    Follow symlinks
+      --show-directories   Show the directories we are actually crawling
+      --threads <THREADS>  Number of cores to use for crawling [default: <num_cpus>]
+      --check <CHECK>      Override checks to run on found repositories [possible values: dirty, ahead-branches, no-upstream-branches]
+  -h, --help               Print help (see more with '--help')
   -V, --version            Print version
 ```
+
+## Examples
 
 - To check all repos under the current directory
 
@@ -95,14 +96,27 @@ Options:
   git leave --default
   ```
 
+# Checks
+
+- `dirty`: Whether the repository has a dirty working copy
+- `ahead-branches`: List all branches that are ahead of their remote
+- `no-upstream-branches`: List all branches with no upstream
+
 # Config
 
 Set the `leaveTool.defaultFolder` key in your git global configuration file to use the `--default` or `-d` flag.
 
-In `.config/git/config`, or any other git config file:
-```conf
-[leaveTool]
+In your global git config file (e.g. `.config/git/config`):
+
+```git-config
+[git_leave]
+    # Folder used when the `--default` flag is provided
     defaultFolder = ~/path/to/projects
+    # Override checks to run on repositories.
+    # This is used when checks report false positives for your setup. (e.g. Jujutsu)
+    #
+    # You can get the list in `--help`
+    check = dirty ahead-branches
 ```
 
 # Credits
