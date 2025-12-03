@@ -53,6 +53,7 @@ const CONFIG_KEY_DEFAULT_FOLDER: &str = "leaveTool.defaultFolder";
 const CONFIG_KEY_CHECKS: &str = "leaveTool.checks";
 
 /// Contains all the parsed configuration keys for this tool
+#[derive(Debug, Clone)]
 pub struct Config {
 	/// Default folder to search in when using the `--default` argument
 	pub default_folder: Option<PathBuf>,

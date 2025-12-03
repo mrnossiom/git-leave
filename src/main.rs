@@ -8,8 +8,9 @@ use std::{borrow::Cow, process, time::Instant};
 use clap::Parser;
 use eyre::Context;
 use gix::ThreadSafeRepository;
-use label_logger::{OutputLabel, console::style, error, info, log, success};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use indicatif::ProgressBar;
+use label_logger::{OutputLabel, console::style, error, info, label_theme, log, success};
+use pariter::IteratorExt;
 
 use crate::{
 	config::{Args, Config},
@@ -49,7 +50,8 @@ fn main() -> eyre::Result<()> {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let repos = crawl_repositories(&search_directory, &args);
+	let mut repos = crawl_repositories(&search_directory, &args);
+	repos.sort();
 
 	// Exit if no git repositories were found
 	if repos.is_empty() {
@@ -65,25 +67,37 @@ fn main() -> eyre::Result<()> {
 		begin_search_time.elapsed().as_secs()
 	);
 
-	let diagnostics = repos.par_iter().flat_map(|path| {
-		let Ok(repo) = ThreadSafeRepository::open(path) else {
-			error!("could not open repository");
-			return None;
-		};
+	let diag_bar = ProgressBar::new(repos.len().try_into().unwrap())
+		.with_style(label_theme(OutputLabel::Info("Checking")));
+	let diag_bar_parallel = diag_bar.clone();
 
-		let Ok(diag) = Diagnostic::analyze(&repo.to_thread_local(), &config) else {
-			error!("could not open diagnostic");
-			return None;
-		};
+	let diagnostics = repos
+		.into_iter()
+		.parallel_map(move |path| {
+			diag_bar_parallel.inc(1);
 
-		if !diag.useful() {
-			return None;
-		}
+			let Ok(repo) = ThreadSafeRepository::open(path) else {
+				error!("could not open repository");
+				return None;
+			};
 
-		Some((repo, diag))
-	});
+			let Ok(diag) = Diagnostic::analyze(&repo.to_thread_local(), &config) else {
+				error!("could not open diagnostic");
+				return None;
+			};
 
-	diagnostics.for_each(|(repo, diag)| {
+			if !diag.useful() {
+				return None;
+			}
+
+			Some((repo, diag))
+		})
+		.flatten()
+		.collect::<Vec<_>>();
+
+	diag_bar.finish_and_clear();
+
+	for (repo, diag) in diagnostics {
 		let path = repo
 			.path()
 			.parent()
@@ -134,7 +148,7 @@ fn main() -> eyre::Result<()> {
 				branches_no_upstream.join(", ")
 			);
 		}
-	});
+	}
 
 	Ok(())
 }
