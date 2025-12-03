@@ -116,7 +116,8 @@ In your global git config file (e.g. `.config/git/config`):
     # This is used when checks report false positives for your setup. (e.g. Jujutsu)
     #
     # You can get the list in `--help`
-    check = dirty ahead-branches
+    checks = dirty
+    checks = ahead-branches
 ```
 
 # Credits

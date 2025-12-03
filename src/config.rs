@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
+use gix::bstr::ByteSlice;
 use label_logger::warn;
 
 /// Check for unsaved or uncommitted changes on your machine
@@ -31,8 +32,8 @@ pub struct Args {
 
 	// Singular is used because of repetition on the CLI
 	// e.g. `--check dirty --check ahead-branches`
-	#[clap(long)]
 	/// Override checks to run on found repositories
+	#[clap(long)]
 	pub check: Vec<Check>,
 }
 
@@ -91,11 +92,10 @@ impl Config {
 			self.default_folder = Some(default_folder.to_string().into());
 		}
 
-		if let Some(checks) = config.string(CONFIG_KEY_CHECKS) {
+		if let Some(checks) = config.strings(CONFIG_KEY_CHECKS) {
 			let checks = checks
-				.to_string()
-				.split_ascii_whitespace()
-				.map(|check| Check::from_str(check, false))
+				.into_iter()
+				.map(|check| Check::from_str(&check.to_str_lossy(), false))
 				.collect::<Result<Vec<_>, _>>();
 
 			match checks {
