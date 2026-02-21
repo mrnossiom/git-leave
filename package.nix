@@ -1,28 +1,28 @@
-{ lib
-, rustPlatform
-, gitignore
+{
+  lib,
+  rustPlatform,
+  gitignore,
 }:
 
 let
   inherit (gitignore.lib) gitignoreSource;
 
   src = gitignoreSource ./.;
-  cargoTOML = lib.importTOML "${src}/Cargo.toml";
+  cargo-toml = lib.importTOML "${src}/Cargo.toml";
 in
 rustPlatform.buildRustPackage {
-  pname = cargoTOML.package.name;
-  version = cargoTOML.package.version;
+  pname = cargo-toml.package.name;
+  version = cargo-toml.package.version;
 
   inherit src;
 
-  cargoLock = { lockFile = "${src}/Cargo.lock"; };
+  cargoLock.lockFile = "${src}/Cargo.lock";
 
   nativeBuildInputs = [ ];
   buildInputs = [ ];
 
   meta = {
-    inherit (cargoTOML.package) description homepage license;
-    maintainers = cargoTOML.package.authors;
+    inherit (cargo-toml.package) description homepage license;
     mainProgram = "git-leave";
   };
 }
