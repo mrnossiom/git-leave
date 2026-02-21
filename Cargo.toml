@@ -5,7 +5,6 @@ edition = "2024"
 rust-version = "1.85.0"
 
 description = "Check for unsaved or uncommitted changes on your machine"
-authors = ["Milo Moisson <milo@wiro.world>"]
 repository = "https://github.com/mrnossiom/git-leave"
 keywords = ["crawler", "git", "cli"]
 categories = ["development-tools"]
