@@ -1,4 +1,4 @@
-//! Wrappers around git2 crate to simplify some specific git operations
+//! Wrappers around git crates to simplify some specific git operations
 
 use std::path::{Path, PathBuf};
 
@@ -29,9 +29,12 @@ pub fn print_diagnostics(
 		.parallel_map(move |path| {
 			diag_bar_parallel.inc(1);
 
-			let Ok(repo) = ThreadSafeRepository::open(path) else {
-				error!("could not open repository");
-				return None;
+			let repo = match ThreadSafeRepository::open(&path) {
+				Ok(repo) => repo,
+				Err(err) => {
+					error!("could not open repository {}: {err}", path.display());
+					return None;
+				}
 			};
 
 			let Ok(diag) = Diagnostic::analyze(&repo.to_thread_local(), &config) else {
@@ -173,7 +176,7 @@ fn check_ahead_branches(
 	for mut local_ref in local_branches.filter_map(Result::ok) {
 		let mut remote_ref = match local_ref.remote_ref_name(Direction::Push) {
 			Some(Ok(remote_ref_name)) => repo
-				.find_reference(remote_ref_name.as_partial_name())
+				.find_reference(&remote_ref_name)
 				.wrap_err("could not get remote reference")?,
 			None => {
 				branches_no_upstream.push(local_ref.name().shorten().to_string());

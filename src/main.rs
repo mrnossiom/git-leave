@@ -3,10 +3,9 @@
 )]
 #![doc = include_str!("../README.md")]
 
-use std::{borrow::Cow, process, time::Instant};
+use std::{borrow::Cow, io::ErrorKind, process, time::Instant};
 
 use clap::Parser;
-use eyre::Context;
 use label_logger::{error, success};
 
 use crate::{
@@ -39,9 +38,18 @@ fn main() -> eyre::Result<()> {
 	};
 
 	// Get absolute path to the directory to crawl
-	let search_directory = path
-		.canonicalize()
-		.wrap_err("Could not get absolute path of specified directory")?;
+	let search_directory = match path.canonicalize() {
+		Ok(dir) => dir,
+		Err(err) if err.kind() == ErrorKind::NotFound => {
+			dbg!(path);
+			error!("the specified path does not exist");
+			process::exit(1);
+		}
+		Err(_) => {
+			error!("could not get absolute path of specified directory");
+			process::exit(1);
+		}
+	};
 
 	// Start the timer
 	let begin_search_time = Instant::now();
