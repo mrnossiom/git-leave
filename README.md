@@ -109,7 +109,7 @@ Set the `leaveTool.defaultFolder` key in your git global configuration file to u
 In your global git config file (e.g. `.config/git/config`):
 
 ```git-config
-[git_leave]
+[leaveTool]
     # Folder used when the `--default` flag is provided
     defaultFolder = ~/path/to/projects
     # Override checks to run on repositories.

@@ -14,13 +14,12 @@ license = "CECILL-2.1"
 clap = { version = "4", features = ["derive"] }
 crossbeam = "0.8"
 eyre = "0.6"
-gix = { version = "0.86", default-features = false, features = ["status", "parallel", "sha256"] }
-gix-config = "0.59"
-gix-discover = "0.54"
+git2 = "0.21"
 indicatif = "0.18"
 label-logger = { version = "0.3", features = ["indicatif"] }
 num_cpus = "1"
 pariter = "0.6"
+pathdiff = "0.2.3"
 
 [lints]
 [lints.rust]

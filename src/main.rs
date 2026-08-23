@@ -55,7 +55,7 @@ fn main() -> eyre::Result<()> {
 	let begin_search_time = Instant::now();
 
 	// Find git repositories in the specified directory
-	let mut repos = crawl_repositories(&search_directory, &args);
+	let mut repos = crawl_repositories(&search_directory, &args)?;
 
 	repos.sort();
 

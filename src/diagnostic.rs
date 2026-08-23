@@ -2,10 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
-use eyre::{Context, ContextCompat, bail};
-use gix::{
-	Repository, ThreadSafeRepository, features::progress, remote::Direction, status::UntrackedFiles,
-};
+use eyre::{Context, ContextCompat};
+use git2::Repository;
 use indicatif::ProgressBar;
 use label_logger::{OutputLabel, console::style, error, info, label_theme, log};
 use pariter::IteratorExt;
@@ -29,36 +27,45 @@ pub fn print_diagnostics(
 		.parallel_map(move |path| {
 			diag_bar_parallel.inc(1);
 
-			let repo = match ThreadSafeRepository::open(&path) {
+			let cwd = std::env::current_dir().ok()?;
+
+			let repo = match Repository::open(&path) {
 				Ok(repo) => repo,
 				Err(err) => {
-					error!("could not open repository {}: {err}", path.display());
+					let rel_path = pathdiff::diff_paths(&path, &cwd).unwrap_or(path);
+					error!(
+						"could not open repository {}: {}",
+						rel_path.display(),
+						err.message()
+					);
 					return None;
 				}
 			};
 
-			let Ok(diag) = Diagnostic::analyze(&repo.to_thread_local(), &config) else {
-				error!("could not open diagnostic");
-				return None;
+			let diag = match Diagnostic::analyze(&repo, &config) {
+				Ok(diag) => diag,
+				Err(err) => {
+					let rel_path = pathdiff::diff_paths(&path, &cwd).unwrap_or(path);
+					error!(
+						"could not diagnostic repository {}: {err}",
+						rel_path.display()
+					);
+					return None;
+				}
 			};
 
 			if !diag.useful() {
 				return None;
 			}
 
-			Some((repo, diag))
+			Some((path, diag))
 		})
 		.flatten()
 		.collect::<Vec<_>>();
 
 	diag_bar.finish_and_clear();
 
-	for (repo, diag) in diagnostics {
-		let path = repo
-			.path()
-			.parent()
-			.expect("repository .git folder always has a parent");
-
+	for (path, diag) in diagnostics {
 		let project_name = path
 			.file_name()
 			.wrap_err("could not get project name")?
@@ -70,7 +77,7 @@ pub fn print_diagnostics(
 		// Make path relative to root search directory
 		let directory = directory.replacen(search_directory.to_string_lossy().as_ref(), ".", 1);
 
-		let path = format!(
+		let formatted_path = format!(
 			"{}{}{}",
 			style(directory).dim(),
 			style(std::path::MAIN_SEPARATOR).dim(),
@@ -83,7 +90,7 @@ pub fn print_diagnostics(
 			style("")
 		};
 
-		info!(label: "Repo", "{path}{dirty_info}");
+		info!(label: "Repo", "{formatted_path}{dirty_info}");
 
 		let ahead_branches = diag
 			.ahead_branches
@@ -147,75 +154,68 @@ impl Diagnostic {
 
 /// Check if repository has unsaved files in working or dirty directory
 fn is_dirty(repo: &Repository) -> eyre::Result<bool> {
-	let mut statuses = repo
-		.status(progress::Discard)
-		.wrap_err("could not get status")?
-		.untracked_files(UntrackedFiles::None)
-		.into_iter(None)
-		.wrap_err("could not iterate on statuses")?;
+	let mut opts = git2::StatusOptions::new();
+	opts.include_untracked(false);
 
-	// Return true if there are any changes
-	Ok(statuses.any(|_| true))
+	let statuses = repo
+		.statuses(Some(&mut opts))
+		.wrap_err("could not get status")?;
+
+	Ok(!statuses.is_empty())
 }
-
-/// Do not visit the commit graph further than this arbitrary limit
-const MAX_ANCESTORS_VISIT: usize = 50;
 
 /// Finds branches ahead of remote branches
 fn check_ahead_branches(
 	repo: &Repository,
 	config: &Config,
 ) -> eyre::Result<(Vec<String>, Vec<String>)> {
-	let references = repo.references().wrap_err("could not get references")?;
-	let local_branches = references
-		.local_branches()
-		.wrap_err("could not get local branches")?;
-
 	let mut ahead_branches = vec![];
 	let mut branches_no_upstream = vec![];
-	for mut local_ref in local_branches.filter_map(Result::ok) {
-		let mut remote_ref = match local_ref.remote_ref_name(Direction::Push) {
-			Some(Ok(remote_ref_name)) => repo
-				.find_reference(&remote_ref_name)
-				.wrap_err("could not get remote reference")?,
-			None => {
-				branches_no_upstream.push(local_ref.name().shorten().to_string());
-				continue;
-			}
-			Some(Err(err)) => bail!("could not get branch remote: {err}"),
+
+	let check_ahead = config.checks.contains(&Check::AheadBranches);
+	let check_no_upstream = config.checks.contains(&Check::NoUpstreamBranches);
+
+	if !check_ahead && !check_no_upstream {
+		return Ok((ahead_branches, branches_no_upstream));
+	}
+
+	let branches = repo
+		.branches(Some(git2::BranchType::Local))
+		.wrap_err("could not get local branches")?;
+
+	for branch in branches {
+		let (branch, _) = branch.wrap_err("could not iterate local branches")?;
+
+		let name = match branch.name() {
+			Ok(Some(name)) => name.to_string(),
+			_ => continue,
 		};
 
-		let last_local_commit = local_ref
-			.peel_to_commit()
-			.wrap_err("could not get last commit on local branch")?;
-		let last_remote_commit = remote_ref
-			.peel_to_commit()
-			.wrap_err("could not get last commit on remote branch")?;
-
-		if last_local_commit.id == last_remote_commit.id {
+		let Ok(upstream_branch) = branch.upstream() else {
+			if check_no_upstream {
+				branches_no_upstream.push(name);
+			}
 			continue;
+		};
+
+		if check_ahead {
+			let Ok(local_commit) = branch.get().peel_to_commit() else {
+				continue;
+			};
+			let Ok(upstream_commit) = upstream_branch.get().peel_to_commit() else {
+				continue;
+			};
+
+			if local_commit.id() != upstream_commit.id() {
+				if let Ok((ahead, _)) =
+					repo.graph_ahead_behind(local_commit.id(), upstream_commit.id())
+				{
+					if ahead > 0 {
+						ahead_branches.push(name);
+					}
+				}
+			}
 		}
-
-		let found = last_local_commit
-			.ancestors()
-			.first_parent_only()
-			.all()
-			.wrap_err("could not iterate on last commit ancestors")?
-			.take(MAX_ANCESTORS_VISIT)
-			.filter_map(Result::ok)
-			.find(|info| info.id == last_local_commit.id);
-
-		if found.is_some() {
-			ahead_branches.push(local_ref.name().shorten().to_string());
-		}
-	}
-
-	if !config.checks.contains(&Check::AheadBranches) {
-		ahead_branches = Vec::new();
-	}
-	// TODO: avoid doing ancestors traversal earlier
-	if !config.checks.contains(&Check::NoUpstreamBranches) {
-		branches_no_upstream = Vec::new();
 	}
 
 	Ok((ahead_branches, branches_no_upstream))

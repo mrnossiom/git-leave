@@ -8,14 +8,14 @@ use std::{
 };
 
 use crossbeam::queue::SegQueue;
-use gix_discover::{is_git, repository};
+use eyre::Context;
 use indicatif::ProgressBar;
 use label_logger::{OutputLabel, format_label, indicatif::label_theme};
 
 use crate::config::Args;
 
 /// Spawn the threads needed for crawling directories
-pub fn crawl_repositories(directory: &Path, settings: &Args) -> Vec<PathBuf> {
+pub fn crawl_repositories(directory: &Path, settings: &Args) -> eyre::Result<Vec<PathBuf>> {
 	let pending_paths = SegQueue::new();
 	pending_paths.push(directory.to_path_buf());
 
@@ -24,12 +24,15 @@ pub fn crawl_repositories(directory: &Path, settings: &Args) -> Vec<PathBuf> {
 
 	let dirty_bar = ProgressBar::new(1).with_style(label_theme(OutputLabel::Info("Crawling")));
 
+	let cwd = std::env::current_dir().wrap_err("could not get current directory")?;
+
 	thread::scope(|scope| {
 		for _ in 0..settings.threads {
 			scope.spawn(|| {
 				while let Some(path) = pending_paths.pop() {
 					if let Err(error) = crawl(&path, &pending_paths, &repositories, &dirty_bar, settings) {
-						let msg = format_label!(label: OutputLabel::Error("Error"), "could not crawl {}: {}", path.display(), error);
+						let rel_path = pathdiff::diff_paths(&path, &cwd).unwrap_or(path);
+						let msg = format_label!(label: OutputLabel::Error("Error"), "could not crawl {}: {error}", rel_path.display());
 						dirty_bar.println(msg);
 					}
 				}
@@ -39,7 +42,7 @@ pub fn crawl_repositories(directory: &Path, settings: &Args) -> Vec<PathBuf> {
 
 	dirty_bar.finish_and_clear();
 
-	repositories.into_iter().collect::<Vec<_>>()
+	Ok(repositories.into_iter().collect::<Vec<_>>())
 }
 
 /// Search for git repositories and report folder to the given queue
@@ -57,8 +60,14 @@ fn crawl(
 
 		dirty_bar.inc(1);
 
-		// Return is the directory is a repo
-		if let Ok(repository::Kind::WorkTree { .. }) = is_git(directory) {
+		// Return if the directory is a repo
+		if git2::Repository::open_ext(
+			directory,
+			git2::RepositoryOpenFlags::NO_SEARCH,
+			std::iter::empty::<&std::ffi::OsStr>(),
+		)
+		.is_ok()
+		{
 			repositories.push(directory.clone());
 			return Ok(());
 		}

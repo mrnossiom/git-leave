@@ -2,6 +2,8 @@
   lib,
   rustPlatform,
   gitignore,
+
+  libgit2,
 }:
 
 let
@@ -19,7 +21,9 @@ rustPlatform.buildRustPackage {
   cargoLock.lockFile = "${src}/Cargo.lock";
 
   nativeBuildInputs = [ ];
-  buildInputs = [ ];
+  buildInputs = [
+    libgit2
+  ];
 
   meta = {
     inherit (cargo-toml.package) description homepage license;

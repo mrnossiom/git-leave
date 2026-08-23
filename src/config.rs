@@ -3,7 +3,6 @@
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
-use gix::bstr::ByteSlice;
 use label_logger::warn;
 
 /// Check for unsaved or uncommitted changes on your machine
@@ -80,7 +79,7 @@ impl Default for Config {
 impl Config {
 	/// Parse the global git config file and return the keys we are interested in.
 	pub fn apply_git_config(&mut self) -> eyre::Result<()> {
-		let config = match gix_config::File::from_globals() {
+		let config = match git2::Config::open_default() {
 			Ok(config) => config,
 			Err(err) => {
 				warn!("could not open global config: {err}");
@@ -88,19 +87,25 @@ impl Config {
 			}
 		};
 
-		if let Some(default_folder) = config.string(CONFIG_KEY_DEFAULT_FOLDER) {
-			self.default_folder = Some(default_folder.to_string().into());
+		if let Ok(default_folder) = config.get_path(CONFIG_KEY_DEFAULT_FOLDER) {
+			self.default_folder = Some(default_folder);
 		}
 
-		if let Some(checks) = config.strings(CONFIG_KEY_CHECKS) {
-			let checks = checks
-				.into_iter()
-				.map(|check| Check::from_str(&check.to_str_lossy(), false))
-				.collect::<Result<Vec<_>, _>>();
-
-			match checks {
-				Ok(checks) => self.checks = checks,
-				Err(err) => return Err(eyre::eyre!("could not parse checks: {err}")),
+		if let Ok(mut entries) = config.multivar(CONFIG_KEY_CHECKS, None) {
+			let mut checks = Vec::new();
+			let mut has_entries = false;
+			while let Some(entry) = entries.next() {
+				let entry =
+					entry.map_err(|err| eyre::eyre!("could not read config entry: {err}"))?;
+				if let Ok(value) = entry.value() {
+					has_entries = true;
+					let check = Check::from_str(value, false)
+						.map_err(|err| eyre::eyre!("could not parse check '{value}': {err}"))?;
+					checks.push(check);
+				}
+			}
+			if has_entries {
+				self.checks = checks;
 			}
 		}
 
