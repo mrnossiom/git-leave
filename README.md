@@ -11,9 +11,6 @@ Check for unsaved or uncommitted changes on your machine
   <a href="https://crates.io/crates/git-leave">
     <img alt="git-leave crates.io version" src="https://img.shields.io/crates/v/git-leave">
   </a>
-  <a href="https://matrix.to/#/#git-leave:wiro.world">
-    <img alt="Matrix room at #git-leave:wiro.world" src="https://img.shields.io/badge/Matrix-%23git--leave%3Awiro.world-white?logo=matrix">
-  </a>
 </p>
 
 # Installation
